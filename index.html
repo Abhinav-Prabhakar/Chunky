@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="monkey">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="Chunky — a Monkeytype-style practice gym for speed readers. Train word chunking with timed RSVP drills, comprehension quizzes, stats, streaks and achievements." />
+  <title>chunky — speed reading practice</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='2' width='13' height='13' rx='3.5' fill='%23646669'/%3E%3Crect x='17' y='2' width='13' height='13' rx='3.5' fill='%23646669'/%3E%3Crect x='2' y='17' width='13' height='13' rx='3.5' fill='%23646669'/%3E%3Crect x='17' y='17' width='13' height='13' rx='3.5' fill='%23e2b714'/%3E%3C/svg%3E" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="assets/icon.svg" />
+  <meta name="theme-color" id="metaTheme" content="#323437" />
+
+  <!-- apply saved theme before first paint to avoid a flash of the default -->
+  <script>
+  (function () {
+    try {
+      var s = JSON.parse(localStorage.getItem('chunky.settings') || '{}');
+      var t = s.theme || 'monkey';
+      var root = document.documentElement;
+      root.setAttribute('data-theme', t);
+      if (s.fontSize) root.style.setProperty('--chunk-size', s.fontSize + 'px');
+      if (s.fontFamily) root.style.setProperty('--read-font', s.fontFamily);
+      if (t === 'custom' && /^#[0-9a-f]{6}$/i.test(s.accent || '')) root.style.setProperty('--main', s.accent);
+    } catch (e) {}
+  })();
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&family=Literata:opsz,wght@7..72,400;7..72,500&family=Inter:wght@400;500;600&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<a class="skip-link" href="#practiceHeading">skip to practice</a>
+
+<header class="topbar">
+  <div class="topbar-left">
+    <a class="logo" href="#practice" id="logoHome" aria-label="chunky — home">
+      <svg class="logo-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <rect x="2" y="2" width="13" height="13" rx="3.5" fill="var(--dim)"/>
+        <rect x="17" y="2" width="13" height="13" rx="3.5" fill="var(--dim)"/>
+        <rect x="2" y="17" width="13" height="13" rx="3.5" fill="var(--dim)"/>
+        <rect x="17" y="17" width="13" height="13" rx="3.5" fill="var(--main)"/>
+      </svg>
+      <span class="wordmark">chunky</span>
+    </a>
+    <nav class="nav-tabs" aria-label="views">
+      <button class="nav-tab active" id="navTest" type="button" aria-current="page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        practice
+      </button>
+      <button class="nav-tab" id="navStats" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        stats
+      </button>
+    </nav>
+  </div>
+
+  <div class="topbar-right">
+    <button class="icon-btn" id="btnShortcuts" type="button" title="keyboard shortcuts" aria-label="keyboard shortcuts">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M6 14h.01M18 14h.01M9 14h6"/></svg>
+    </button>
+    <button class="icon-btn" id="btnTheme" type="button" title="theme" aria-label="choose theme">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a10 10 0 0 0 0 20 1.5 1.5 0 0 0 0-3 2 2 0 0 1 2-2h2.5A3.5 3.5 0 0 0 20 13.5C19.7 7.4 16.7 2 12 2z"/><circle cx="7.5" cy="10.5" r=".8" fill="currentColor"/><circle cx="11" cy="6.5" r=".8" fill="currentColor"/><circle cx="15.5" cy="8" r=".8" fill="currentColor"/></svg>
+    </button>
+    <button class="icon-btn" id="btnSettings" type="button" title="settings" aria-label="settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+  </div>
+</header>
+
+<main>
+
+  <!-- ================= PRACTICE / TEST VIEW ================= -->
+  <section id="view-test" class="view active" aria-labelledby="practiceHeading">
+    <h1 class="sr-only" id="practiceHeading" tabindex="-1">practice</h1>
+
+    <div class="config-bar" id="configBar">
+      <div class="config-group" role="group" aria-label="mode">
+        <button class="pill active" data-mode="passage" type="button">passage</button>
+        <button class="pill" data-mode="time" type="button">time</button>
+        <button class="pill" data-mode="zen" type="button">zen</button>
+        <button class="pill" data-mode="ramp" type="button">ramp</button>
+        <button class="pill" data-mode="custom" type="button">custom</button>
+      </div>
+      <span class="config-sep" aria-hidden="true"></span>
+      <div class="config-group" role="group" aria-label="chunk size">
+        <span class="group-label">chunk</span>
+        <button class="pill" data-chunk="1" type="button">1</button>
+        <button class="pill active" data-chunk="2" type="button">2</button>
+        <button class="pill" data-chunk="3" type="button">3</button>
+        <button class="pill" data-chunk="4" type="button">4</button>
+        <button class="pill pill-smart" data-smart="1" type="button" aria-pressed="true" title="keep phrases together instead of cutting every N words">smart</button>
+      </div>
+      <span class="config-sep" aria-hidden="true"></span>
+
+      <div class="config-group" id="lenPills" role="group" aria-label="passage length">
+        <span class="group-label">length</span>
+        <button class="pill" data-len="short" type="button">short</button>
+        <button class="pill active" data-len="medium" type="button">medium</button>
+        <button class="pill" data-len="long" type="button">long</button>
+      </div>
+
+      <div class="config-group hidden" id="timePills" role="group" aria-label="time limit">
+        <span class="group-label">time</span>
+        <button class="pill" data-time="15" type="button">15s</button>
+        <button class="pill" data-time="30" type="button">30s</button>
+        <button class="pill active" data-time="60" type="button">60s</button>
+        <button class="pill" data-time="120" type="button">120s</button>
+      </div>
+
+      <span class="config-sep" id="speedSep" aria-hidden="true"></span>
+      <div class="config-group" id="speedPills" role="group" aria-label="reading speed">
+        <span class="group-label">speed</span>
+        <button class="pill" data-wpm="150" type="button">150</button>
+        <button class="pill" data-wpm="200" type="button">200</button>
+        <button class="pill" data-wpm="250" type="button">250</button>
+        <button class="pill active" data-wpm="300" type="button">300</button>
+        <button class="pill" data-wpm="350" type="button">350</button>
+        <button class="pill" data-wpm="400" type="button">400</button>
+        <button class="pill" data-wpm="500" type="button">500</button>
+        <span class="target-wpm" id="targetWpm">300<small>wpm</small></span>
+      </div>
+    </div>
+
+    <div class="stage-top">
+      <span class="stage-title" id="stageTitle">passage — the hidden life of bees</span>
+      <span class="stage-meta" id="stageMeta">medium · 184 words · 3 questions</span>
+    </div>
+
+    <div class="stage" id="stage" aria-label="reading stage">
+      <div class="guide guide-top" aria-hidden="true"></div>
+      <div class="guide guide-bottom" aria-hidden="true"></div>
+      <div class="pivot-line" aria-hidden="true"></div>
+      <div class="rsvp-line" id="rsvpLine">
+        <span class="rsvp-pre" id="chunkPre">the qui</span><span class="rsvp-pivot" id="chunkPivot">c</span><span class="rsvp-post" id="chunkPost">k brown</span>
+      </div>
+      <div class="stage-overlay" id="stageOverlay">
+        <div class="overlay-big" id="overlayTitle">press <kbd>space</kbd> to start<span class="caret-blink" aria-hidden="true"></span></div>
+        <div class="overlay-sub" id="overlaySub">keep your eyes on the pivot — let the words come to you</div>
+        <div class="overlay-best" id="overlayBest"></div>
+        <button class="btn primary overlay-btn" id="btnOverlayStart" type="button">
+          <svg class="ic-play" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>
+          start reading
+        </button>
+      </div>
+    </div>
+
+    <div class="transport" id="transport">
+      <button class="trans-btn" id="btnPrevChunk" type="button" aria-label="previous chunk" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <button class="trans-btn trans-play" id="btnPlay" type="button" aria-label="start reading">
+        <svg class="ic-play" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>
+        <svg class="ic-pause" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+        <span id="playLabel">start</span>
+      </button>
+      <button class="trans-btn" id="btnNextChunk" type="button" aria-label="next chunk" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+      <span class="trans-wpm"><span id="transWpm">300</span><small>wpm</small></span>
+    </div>
+
+    <div class="context-line" id="contextLine" aria-label="current sentence"></div>
+
+    <div class="hud">
+      <span class="hud-item"><span class="hud-num" id="hudChunk">chunk 0 / 0</span></span>
+      <span class="hud-item"><span class="hud-num accent" id="hudWpm">0</span><span class="hud-unit"> wpm</span></span>
+      <span class="hud-item"><span class="hud-num" id="hudTime">0:00</span></span>
+    </div>
+
+    <div class="progress-track" id="progressTrack" role="progressbar" aria-label="passage progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <div class="passage" id="passage" aria-label="passage text"></div>
+
+    <div class="stage-foot">
+      <button class="btn ghost small" id="btnCustomText" type="button">paste your own text</button>
+      <button class="btn ghost small" id="btnSkipPassage" type="button">different passage</button>
+      <button class="btn ghost small" id="btnDaily" type="button">daily challenge</button>
+    </div>
+  </section>
+
+  <!-- ================= QUIZ VIEW ================= -->
+  <section id="view-quiz" class="view" aria-labelledby="quizQuestion">
+    <div class="quiz-card">
+      <div class="quiz-head">
+        <span class="quiz-eyebrow">comprehension check</span>
+        <span class="quiz-count" id="quizCount">question 1 / 3</span>
+      </div>
+      <h2 class="quiz-question" id="quizQuestion" tabindex="-1">Question goes here?</h2>
+      <div class="quiz-options" id="quizOptions" role="radiogroup" aria-labelledby="quizQuestion"></div>
+      <div class="quiz-why hidden" id="quizWhy" role="status"></div>
+      <div class="quiz-foot"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> to answer<span class="quiz-score-preview" id="quizScorePreview"></span></div>
+    </div>
+  </section>
+
+  <!-- ================= RESULTS VIEW ================= -->
+  <section id="view-results" class="view" aria-labelledby="resultsHeading">
+    <div class="results-card">
+      <h2 class="sr-only" id="resultsHeading" tabindex="-1">results</h2>
+      <div class="res-eyebrow-row">
+        <span class="res-eyebrow" id="resEyebrow">session complete</span>
+        <span class="pb-badge hidden" id="resPbBadge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 10"/></svg>
+          new personal best
+        </span>
+      </div>
+      <div class="res-grid">
+        <div class="res-primary">
+          <div class="res-big" id="resWpm">0</div>
+          <div class="res-label">words per minute</div>
+        </div>
+        <div class="res-sub-grid">
+          <div class="res-cell"><div class="res-num" id="resEff">—</div><div class="res-cell-label">effective wpm</div></div>
+          <div class="res-cell"><div class="res-num" id="resComp">—</div><div class="res-cell-label">comprehension</div></div>
+          <div class="res-cell"><div class="res-num" id="resTime">0:00</div><div class="res-cell-label">time</div></div>
+          <div class="res-cell"><div class="res-num" id="resWords">0</div><div class="res-cell-label">words read</div></div>
+          <div class="res-cell"><div class="res-num" id="resChunk">2</div><div class="res-cell-label">chunk size</div></div>
+          <div class="res-cell"><div class="res-num" id="resFocus">—</div><div class="res-cell-label">focus score</div></div>
+        </div>
+      </div>
+
+      <p class="res-note" id="resNote"></p>
+      <p class="res-compare" id="resCompare"></p>
+
+      <div class="chart-wrap">
+        <canvas class="res-chart" id="resChart" role="img" aria-label="reading speed across the session"></canvas>
+        <div class="chart-tip hidden" id="chartTip"></div>
+      </div>
+      <div class="res-chart-label">speed through the session</div>
+
+      <details class="review hidden" id="resReview">
+        <summary>review answers</summary>
+        <div class="review-list" id="resReviewList"></div>
+      </details>
+
+      <div class="res-actions">
+        <button class="btn primary" id="btnNewPassage" type="button">next passage <kbd>enter</kbd></button>
+        <button class="btn" id="btnRetry" type="button">retry this passage</button>
+        <button class="btn" id="btnDrill" type="button">drill missed questions</button>
+        <button class="btn ghost" id="btnCopy" type="button">copy summary</button>
+        <button class="btn ghost" id="btnMenu" type="button">back to practice</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= STATS VIEW ================= -->
+  <section id="view-stats" class="view" aria-labelledby="statsHeading">
+    <div class="stats-inner">
+      <div class="stats-head">
+        <h1 class="stats-title" id="statsHeading" tabindex="-1">your reading, measured</h1>
+        <div class="stats-head-actions">
+          <button class="btn ghost small" id="btnExport" type="button">export</button>
+          <label class="btn ghost small import-label" for="importFile">import</label>
+          <input type="file" id="importFile" accept="application/json,.json" hidden />
+          <button class="btn ghost small" id="btnCsv" type="button">csv</button>
+          <button class="btn ghost small danger" id="btnClearHistory" type="button">clear</button>
+        </div>
+      </div>
+
+      <div class="filters" id="statsFilters">
+        <div class="filter-group" role="group" aria-label="filter by mode">
+          <span class="group-label">mode</span>
+          <button class="pill active" data-filter-mode="all" type="button">all</button>
+          <button class="pill" data-filter-mode="passage" type="button">passage</button>
+          <button class="pill" data-filter-mode="time" type="button">time</button>
+          <button class="pill" data-filter-mode="zen" type="button">zen</button>
+          <button class="pill" data-filter-mode="ramp" type="button">ramp</button>
+          <button class="pill" data-filter-mode="custom" type="button">custom</button>
+        </div>
+        <span class="config-sep" aria-hidden="true"></span>
+        <div class="filter-group" role="group" aria-label="filter by range">
+          <span class="group-label">range</span>
+          <button class="pill" data-filter-range="7" type="button">7d</button>
+          <button class="pill" data-filter-range="30" type="button">30d</button>
+          <button class="pill active" data-filter-range="all" type="button">all</button>
+        </div>
+      </div>
+
+      <div class="goal-panel">
+        <div class="goal-head">
+          <span class="goal-title">daily goal</span>
+          <span class="goal-text" id="goalText">0 / 500 words</span>
+        </div>
+        <div class="goal-track" id="goalTrack" role="progressbar" aria-label="daily goal progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <div class="goal-fill" id="goalBar"></div>
+        </div>
+      </div>
+
+      <div class="tile-row">
+        <div class="tile"><div class="tile-num" id="statTests">0</div><div class="tile-label">sessions</div></div>
+        <div class="tile"><div class="tile-num" id="statWords">0</div><div class="tile-label">words read</div></div>
+        <div class="tile"><div class="tile-num" id="statTime">0</div><div class="tile-label">minutes reading</div></div>
+        <div class="tile"><div class="tile-num" id="statAvgWpm">0</div><div class="tile-label">avg wpm</div></div>
+        <div class="tile"><div class="tile-num" id="statAvgComp">—</div><div class="tile-label">avg comprehension</div></div>
+        <div class="tile">
+          <div class="tile-num streak"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 23c-4 0-7-2.8-7-7 0-2.4 1.2-4.4 2.4-6.1.4 1.4 1.4 2.4 2.6 2.8-.4-2.6.6-6.2 3.8-8.6-.3 3.2.8 4.8 2.3 6.6 1.2 1.5 2.9 3.3 2.9 5.7 0 4.2-3 6.6-7 6.6z"/></svg><span id="statStreak">0</span></div>
+          <div class="tile-label">day streak</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <span class="panel-title">chunk size — what it buys and costs</span>
+          <span class="panel-sub">scored sessions</span>
+        </div>
+        <div class="insight-wrap">
+          <table class="insight-table" aria-label="performance by chunk size">
+            <thead><tr><th>chunk</th><th>sessions</th><th>avg wpm</th><th>avg comprehension</th><th>effective</th></tr></thead>
+            <tbody id="chunkBody"></tbody>
+          </table>
+        </div>
+        <p class="stat-note">bigger chunks read faster, but usually cost comprehension — effective wpm is the honest column.</p>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><span class="panel-title">speed — recent sessions</span><span class="panel-sub" id="statsChartBest"></span></div>
+        <div class="chart-wrap">
+          <canvas class="stats-chart" id="statsChart" role="img" aria-label="wpm across recent sessions"></canvas>
+          <div class="chart-tip hidden" id="statsChartTip"></div>
+        </div>
+        <p class="sr-only" id="statsChartText"></p>
+      </div>
+
+      <div class="chart-row">
+        <div class="panel">
+          <div class="panel-head"><span class="panel-title">distribution</span><span class="panel-sub">wpm spread</span></div>
+          <canvas class="stats-chart" id="distChart" role="img" aria-label="distribution of reading speeds"></canvas>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><span class="panel-title">speed vs comprehension</span><span class="panel-sub">each dot is a session</span></div>
+          <canvas class="stats-chart" id="scatterChart" role="img" aria-label="scatter plot of speed against comprehension"></canvas>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><span class="panel-title">activity — trailing 26 weeks</span><span class="panel-sub">one square per day</span></div>
+        <div class="heatmap-months" id="heatmapMonths"></div>
+        <div class="heatmap" id="heatmap"></div>
+        <div class="heatmap-legend">less <span class="legend-cells"><span class="heat-cell l0"></span><span class="heat-cell l1"></span><span class="heat-cell l2"></span><span class="heat-cell l3"></span><span class="heat-cell l4"></span></span> more</div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><span class="panel-title">achievements</span><span class="panel-sub" id="achProgress">0 / 14 unlocked</span></div>
+        <div class="ach-grid" id="achGrid"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><span class="panel-title">passage library</span><span class="panel-sub" id="passagesProgress">0 / 15 read</span></div>
+        <div class="passage-grid" id="passagesGrid"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><span class="panel-title">recent sessions</span><span class="panel-sub" id="histCount">latest 8</span></div>
+        <div class="hist-wrap">
+          <table class="hist-table" aria-label="recent sessions">
+            <thead><tr><th>when</th><th>mode</th><th>passage</th><th>wpm</th><th>eff.</th><th>comp.</th><th>chunk</th><th>words</th><th><span class="sr-only">delete</span></th></tr></thead>
+            <tbody id="histBody"></tbody>
+          </table>
+          <div class="hist-empty hidden" id="histEmpty">no sessions yet — run your first practice above.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-left" id="footerKeys"></div>
+  <div class="footer-right">read in chunks, not letters</div>
+</footer>
+
+<!-- ================= SETTINGS MODAL ================= -->
+<div class="overlay hidden" id="modalSettings" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+  <div class="modal">
+    <div class="modal-head"><h2 class="modal-title" id="settingsTitle">settings</h2><button class="icon-btn" id="closeSettings" type="button" aria-label="close settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">display</div>
+      <label class="setting-row" for="setFontSize">
+        <span class="setting-text"><span class="setting-name">reading text size</span><span class="setting-desc">size of the pivot display, scaled down automatically for long chunks</span></span>
+        <span class="setting-control"><input type="range" id="setFontSize" min="36" max="128" step="2" value="64" /><span class="range-val" id="setFontSizeVal">64px</span></span>
+      </label>
+      <label class="setting-row" for="setFontFamily">
+        <span class="setting-text"><span class="setting-name">reading font</span><span class="setting-desc">typeface for the pivot line</span></span>
+        <select class="select" id="setFontFamily">
+          <option value="'Roboto Mono', monospace">roboto mono</option>
+          <option value="'Literata', serif">literata (serif)</option>
+          <option value="'Inter', sans-serif">inter (sans)</option>
+          <option value="'Atkinson Hyperlegible', sans-serif">atkinson hyperlegible</option>
+          <option value="Georgia, 'Times New Roman', serif">georgia</option>
+        </select>
+      </label>
+      <label class="setting-row toggle-row">
+        <span class="setting-text"><span class="setting-name">highlight pivot letter</span><span class="setting-desc">accent color on the optimal recognition point</span></span>
+        <span class="switch"><input type="checkbox" id="setPivot" checked /><span class="slider"></span></span>
+      </label>
+      <label class="setting-row toggle-row">
+        <span class="setting-text"><span class="setting-name">show passage below</span><span class="setting-desc">dim-highlighted text under the stage</span></span>
+        <span class="switch"><input type="checkbox" id="setShowPassage" checked /><span class="slider"></span></span>
+      </label>
+      <label class="setting-row toggle-row">
+        <span class="setting-text"><span class="setting-name">current sentence</span><span class="setting-desc">show the sentence you're inside, with the current chunk marked</span></span>
+        <span class="switch"><input type="checkbox" id="setContext" checked /><span class="slider"></span></span>
+      </label>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">pacing</div>
+      <label class="setting-row" for="setPunctStrength">
+        <span class="setting-text"><span class="setting-name">punctuation pauses</span><span class="setting-desc">longer dwell at periods, commas and dashes</span></span>
+        <select class="select" id="setPunctStrength">
+          <option value="gentle">gentle</option>
+          <option value="normal">normal</option>
+          <option value="aggressive">aggressive</option>
+        </select>
+      </label>
+      <label class="setting-row toggle-row">
+        <span class="setting-text"><span class="setting-name">adaptive ramp</span><span class="setting-desc">start ~35% slower, ease into full speed</span></span>
+        <span class="switch"><input type="checkbox" id="setRamp" checked /><span class="slider"></span></span>
+      </label>
+      <label class="setting-row toggle-row">
+        <span class="setting-text"><span class="setting-name">smart chunks</span><span class="setting-desc">avoid ending a chunk on "the", "of", "and" — keeps phrases intact</span></span>
+        <span class="switch"><input type="checkbox" id="setSmart" checked /><span class="slider"></span></span>
+      </label>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">practice</div>
+      <label class="setting-row" for="setGoal">
+        <span class="setting-text"><span class="setting-name">daily goal</span><span class="setting-desc">words per day · set to 0 to turn the goal off</span></span>
+        <span class="setting-control"><input class="num-input" type="number" id="setGoal" min="0" max="5000" step="50" value="500" /><span class="range-val">words</span></span>
+      </label>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">audio</div>
+      <label class="setting-row toggle-row">
+        <span class="setting-text"><span class="setting-name">sound effects</span><span class="setting-desc">subtle ticks per chunk, chime on completion</span></span>
+        <span class="switch"><input type="checkbox" id="setSound" /><span class="slider"></span></span>
+      </label>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">data</div>
+      <p class="setting-desc" id="storageNote">progress is saved in this browser only. export from the stats page to keep a backup.</p>
+    </div>
+
+    <div class="modal-foot">
+      <button class="btn ghost small" id="btnResetSettings" type="button">reset to defaults</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= THEME MODAL ================= -->
+<div class="overlay hidden" id="modalTheme" role="dialog" aria-modal="true" aria-labelledby="themeTitle">
+  <div class="modal">
+    <div class="modal-head"><h2 class="modal-title" id="themeTitle">theme</h2><button class="icon-btn" id="closeTheme" type="button" aria-label="close themes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="theme-grid" id="themeGrid"></div>
+    <div class="accent-row">
+      <span class="accent-label">custom accent</span>
+      <input type="color" id="setAccent" value="#e2b714" aria-label="custom accent color" />
+      <span class="accent-val" id="accentVal">#e2b714</span>
+      <button class="btn ghost small" id="btnUseCustom" type="button">use custom</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= SHORTCUTS MODAL ================= -->
+<div class="overlay hidden" id="modalShortcuts" role="dialog" aria-modal="true" aria-labelledby="shortcutsTitle">
+  <div class="modal">
+    <div class="modal-head"><h2 class="modal-title" id="shortcutsTitle">keyboard shortcuts</h2><button class="icon-btn" id="closeShortcuts" type="button" aria-label="close shortcuts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="shortcut-list" id="shortcutList"></div>
+  </div>
+</div>
+
+<!-- ================= CUSTOM TEXT MODAL ================= -->
+<div class="overlay hidden" id="modalCustom" role="dialog" aria-modal="true" aria-labelledby="customTitle">
+  <div class="modal wide">
+    <div class="modal-head"><h2 class="modal-title" id="customTitle">paste your own text</h2><button class="icon-btn" id="closeCustom" type="button" aria-label="close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <textarea class="custom-area" id="customText" placeholder="Paste an article, an email draft, lecture notes, a chapter — anything you want to rehearse on…" spellcheck="false"></textarea>
+    <div class="custom-saved hidden" id="customSaved"></div>
+    <div class="custom-tools">
+      <label class="btn ghost small import-label" for="customFile">load a .txt / .md file</label>
+      <input type="file" id="customFile" accept=".txt,.md,text/plain,text/markdown" hidden />
+      <span class="custom-hint">your text stays on this device and is remembered for next time</span>
+    </div>
+    <div class="custom-foot">
+      <span class="custom-count" id="customCount">0 words</span>
+      <span class="custom-hint">minimum 25 words · no comprehension quiz for custom text</span>
+      <button class="btn primary" id="btnStartCustom" type="button">read it <kbd>enter</kbd></button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= CONFIRM MODAL ================= -->
+<div class="overlay hidden" id="modalConfirm" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmBody">
+  <div class="modal">
+    <div class="modal-head"><h2 class="modal-title" id="confirmTitle">are you sure?</h2></div>
+    <p class="confirm-body" id="confirmBody"></p>
+    <div class="modal-foot confirm-foot">
+      <button class="btn ghost small" id="confirmCancel" type="button">cancel</button>
+      <button class="btn small danger-solid" id="confirmOk" type="button">confirm</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast hidden" id="toast" role="status" aria-live="polite"></div>
+<div class="sr-only" id="viewAnnounce" role="status" aria-live="polite"></div>
+
+<noscript>
+  <div class="noscript">chunky needs JavaScript to run. enable it and reload.</div>
+</noscript>
+
+<script src="js/passages.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

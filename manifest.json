@@ -1,0 +1,19 @@
+{
+  "name": "chunky — speed reading practice",
+  "short_name": "chunky",
+  "description": "A Monkeytype-style practice gym for speed readers: RSVP word chunks, comprehension quizzes, stats and streaks.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#323437",
+  "theme_color": "#323437",
+  "icons": [
+    {
+      "src": "assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
