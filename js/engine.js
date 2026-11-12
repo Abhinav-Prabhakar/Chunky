@@ -91,7 +91,6 @@ const DEFAULT_SETTINGS = {
   fontFamily: "'Roboto Mono', monospace",
   pivot: true,
   showPassage: true,
-  context: true,
   punct: true,
   punctStrength: 'normal',
   ramp: true,

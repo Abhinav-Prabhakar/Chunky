@@ -9,9 +9,9 @@ what went past. No build step, no framework, no account — plain HTML, CSS and 
 - **RSVP chunk reading** with 1–4 word chunks, pivot-letter alignment, punctuation
   pauses, an adaptive speed ramp and phrase-aware "smart chunks" that avoid breaking
   on `the` / `of` / `and`.
-- **Up to 3000 wpm** on a logarithmic speed slider, with live `−` / `+` steppers in the
-  transport. Change speed *or* chunk width mid-session — the reader keeps your place,
-  rebuilds the chunks around the word you were on and carries straight on.
+- **Up to 3000 wpm** on a logarithmic speed slider. Change speed *or* chunk width
+  mid-session — the reader keeps your place, rebuilds the chunks around the word you
+  were on and carries straight on.
 - **Five modes** — passage, timed, zen (manual pace), ramp (the speed climbs as you
   read) and your own pasted text.
 - **Comprehension checks** with a one-line explanation per answer, an answer review,
@@ -53,7 +53,7 @@ Opening `index.html` directly also works, except the service worker (which needs
 | `↑` `↓` | chunk size − / + |
 | `b` | peek at the previous chunk |
 | `1`–`4` | answer a comprehension question |
-| `v` / `c` / `m` | toggle passage / sentence / smart chunks |
+| `v` / `m` | toggle passage / smart chunks |
 | `f` | fullscreen |
 | `t` / `s` / `?` | theme / settings / shortcuts |
 | `esc` | quit the session or close a panel |

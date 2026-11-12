@@ -62,7 +62,6 @@ let chunkEls = [];
 let measureCtx = null;
 let wakeLock = null;
 let previewIdx = null;
-let lastContextAt = 0;
 let lastScrollAt = 0;
 let lastTickAt = 0;
 
@@ -164,7 +163,6 @@ function switchView(name, opts = {}) {
   if (onPractice) navT.setAttribute('aria-current', 'page'); else navT.removeAttribute('aria-current');
   if (name === 'stats') navS.setAttribute('aria-current', 'page'); else navS.removeAttribute('aria-current');
   if (name === 'stats') renderStats();
-  if (name === 'test') renderHomeStrip();
   if (opts.hash !== false) setHash(name);
   if (changed) announce(name);
   window.scrollTo({ top: 0 });
@@ -234,7 +232,6 @@ function newSession(opts = {}) {
   }
 
   const chunks = buildChunks(words, settings.chunkSize, settings.smartChunks);
-  const sentences = annotateSentences(words, chunks);
   const startIdx = opts.resumePos ? clamp(Math.round(opts.resumePos), 0, chunks.length - 1) : 0;
   const countsDaily = !!opts.daily && dailyState.date !== todayKey();
 
@@ -251,7 +248,6 @@ function newSession(opts = {}) {
     chunkSize: settings.chunkSize,
     smart: settings.smartChunks,
     words,
-    sentences,
     chunks,
     totalWords: words.length,
     wordOffset: chunks[startIdx] ? chunks[startIdx].start : 0,
@@ -273,22 +269,6 @@ function newSession(opts = {}) {
     peakWpm: 0,
   };
 
-  const qCount = passage ? passage.questions.length : 0;
-  $('#stageTitle').textContent = opts.daily
-    ? `daily challenge — ${passage.category} · ${passage.title.toLowerCase()}`
-    : mode === 'custom'
-      ? 'custom text'
-      : `${passage.category} — ${passage.title.toLowerCase()}`;
-  $('#stageMeta').textContent = mode === 'custom'
-    ? `${fmtInt(words.length)} words · no quiz${startIdx ? ' · resumed' : ''}`
-    : mode === 'zen'
-      ? `${fmtInt(words.length)} words · manual pace · no quiz`
-      : mode === 'time'
-        ? `${fmtInt(words.length)} words · ${settings.timeLimit}s limit · quiz from what you read`
-        : mode === 'ramp'
-          ? `${fmtInt(words.length)} words · speed climbs as you go · ${qCount} questions`
-          : `${tier} · ${fmtInt(words.length)} words · ${qCount} questions`;
-
   renderPassageText();
   $('#passage').scrollTop = 0;
   lastMarkIdx = -1;
@@ -302,7 +282,6 @@ function newSession(opts = {}) {
   if (c0) fitChunk(c0.text);
   refreshDailyButton();
   syncPills();
-  renderHomeStrip();
 }
 
 /* ---------- rendering the reading surface ---------- */
@@ -344,7 +323,6 @@ function renderChunk(i, opts = {}) {
   fitChunk(c.text);
   markPassageProgress(i, opts.force);
   updateProgress(i);
-  renderContext(c, opts.force);
 }
 
 function markPassageProgress(i, force = false) {
@@ -379,27 +357,6 @@ function markPassageProgress(i, force = false) {
   }
 }
 
-function renderContext(c, force = false) {
-  const el = $('#contextLine');
-  if (!el) return;
-  if (!force) {
-    const now = performance.now();
-    if (now - lastContextAt < 100) return;
-    lastContextAt = now;
-  }
-  if (!settings.context || !session || c.sentence == null || !session.sentences[c.sentence]) {
-    el.classList.add('hidden');
-    el.textContent = '';
-    return;
-  }
-  const s = session.sentences[c.sentence];
-  const before = session.words.slice(s.start, c.start).join(' ');
-  const mid = session.words.slice(c.start, c.end).join(' ');
-  const after = session.words.slice(c.end, s.end + 1).join(' ');
-  el.classList.remove('hidden');
-  el.innerHTML = `${before ? escapeHTML(before) + ' ' : ''}<mark>${escapeHTML(mid)}</mark>${after ? ' ' + escapeHTML(after) : ''}`;
-}
-
 function updateProgress(i) {
   if (!session) return;
   const pct = session.chunks.length ? clamp((i / session.chunks.length) * 100, 0, 100) : 0;
@@ -418,109 +375,61 @@ function renderHUD() {
   const timeEl = $('#hudTime');
   const timeLabel = $('#hudTimeLabel');
   if (session.limitMs) {
-    if (timeLabel) timeLabel.textContent = 'left';
+    if (timeLabel) timeLabel.textContent = ' left';
     const remain = Math.max(0, session.limitMs - session.elapsedMs);
     timeEl.textContent = fmtClock(remain / 1000);
     timeEl.style.color = remain < 10000 ? 'var(--error)' : '';
   } else {
-    if (timeLabel) timeLabel.textContent = 'time';
+    if (timeLabel) timeLabel.textContent = '';
     timeEl.textContent = fmtClock(secs);
     timeEl.style.color = '';
-  }
-  if (session.mode === 'ramp') {
-    const cur = Math.round(effectiveWpm(session.mode, session.wpm, session.idx, total));
-    $('#transWpm').textContent = fmtInt(cur);
   }
 }
 
 /* ---------- overlay & transport ---------- */
 function setOverlay(state) {
   const overlay = $('#stageOverlay');
-  const kicker = $('#overlayKicker');
   const title = $('#overlayTitle');
   const sub = $('#overlaySub');
-  const bestEl = $('#overlayBest');
-  const startBtn = $('#btnOverlayStart');
+  if (!overlay) return;
   if (state === 'hidden') { overlay.classList.add('hidden-hard'); return; }
   overlay.classList.remove('hidden-hard');
+  if (!session) return;
   if (state === 'idle') {
-    const b = session ? bestFor(best, session.mode, session.chunkSize) : null;
-    bestEl.textContent = b ? `best at this setting — ${b.label}` : (best.legacy ? `personal best — ${best.legacy.label}` : '');
-    if (kicker) kicker.textContent = session.daily ? 'daily challenge'
-      : session.mode === 'time' ? 'time trial'
-        : session.mode === 'zen' ? 'zen mode'
-          : session.mode === 'ramp' ? 'ramp mode'
-            : session.mode === 'custom' ? 'custom text'
-              : 'passage mode';
     if (session.mode === 'zen') {
-      title.innerHTML = 'zen mode';
-      sub.textContent = 'no timer, no score. space advances one chunk at a time — let the pace come to you.';
+      title.innerHTML = 'press <kbd>space</kbd> to begin';
+      sub.textContent = 'no timer — space steps one chunk at a time.';
     } else if (session.mode === 'time') {
-      title.innerHTML = `read for ${settings.timeLimit} seconds`;
-      sub.textContent = 'the passage keeps coming — comprehension questions follow, but only from what you actually reached.';
+      title.innerHTML = `press <kbd>space</kbd> — ${settings.timeLimit} seconds`;
+      sub.textContent = 'the passage keeps coming; questions follow from what you read.';
     } else if (session.mode === 'custom') {
       title.innerHTML = 'press <kbd>space</kbd> to start';
-      sub.textContent = 'your own text at full speed — raw speed stats, no quiz.';
+      sub.textContent = 'your own text at full speed — no quiz.';
     } else if (session.mode === 'ramp') {
       title.innerHTML = 'press <kbd>space</kbd> to start';
-      sub.textContent = 'the pace climbs about 60% from first chunk to last. stay ahead of it.';
+      sub.textContent = 'the pace climbs as you go. stay ahead of it.';
     } else if (session.daily) {
-      title.innerHTML = 'today\'s challenge';
-      sub.textContent = 'one fixed passage, fixed settings. same text for everyone today.';
+      title.innerHTML = 'press <kbd>space</kbd> for today\'s challenge';
+      sub.textContent = 'one fixed passage, fixed settings.';
     } else {
       title.innerHTML = 'press <kbd>space</kbd> to start';
-      sub.textContent = 'fix your eyes on the pivot letter and let the chunks wash over you.';
+      sub.textContent = 'let the words come to you.';
     }
-    if (startBtn) startBtn.innerHTML = '<svg class="ic-play" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg> start reading';
-    if (startBtn) startBtn.classList.remove('hidden');
   } else if (state === 'paused') {
-    if (kicker) kicker.textContent = 'paused';
     title.innerHTML = 'paused';
-    sub.textContent = 'space to resume · b to peek at the previous chunk · esc to quit';
-    bestEl.textContent = '';
-    if (startBtn) startBtn.classList.add('hidden');
+    sub.textContent = 'space to resume · esc to quit';
   }
 }
 
 function updateTransport(opts = {}) {
-  const running = !!session && session.status === 'running';
   const zen = !!session && session.mode === 'zen';
-  const play = $('#btnPlay');
-  if (!play) return;
-  play.classList.toggle('is-playing', running);
-  play.setAttribute('aria-label', running ? 'pause reading' : (session && session.status === 'paused' ? 'resume reading' : 'start reading'));
-  $('#playLabel').textContent = running ? 'pause' : (session && session.status === 'paused' ? 'resume' : 'start');
-  ['btnPrevChunk', 'btnNextChunk'].forEach(id => {
-    const el = $('#' + id);
-    el.disabled = !zen;
-    el.setAttribute('aria-disabled', zen ? 'false' : 'true');
-  });
-  const tw = $('#transWpm');
-  if (tw) {
-    if (session && session.mode === 'ramp') {
-      tw.textContent = fmtInt(Math.round(effectiveWpm(session.mode, session.wpm, session.idx, session.chunks.length)));
-    } else if (zen) {
-      tw.textContent = 'manual';
-    } else {
-      tw.textContent = fmtInt(settings.wpm);
-    }
-  }
-  const tc = $('#transChunk');
-  if (tc) tc.textContent = settings.chunkSize;
-  $('#targetWpm').innerHTML = `${fmtInt(settings.wpm)}<small>wpm</small>`;
+  const transport = $('#transport');
+  if (transport) transport.classList.toggle('hidden', !zen);
+  const target = $('#targetWpm');
+  if (target) target.innerHTML = `${fmtInt(settings.wpm)}<small>wpm</small>`;
+  const chunkVal = $('#targetChunk');
+  if (chunkVal) chunkVal.textContent = settings.chunkSize;
   syncSpeedUI(opts);
-  updateSetupKicker();
-}
-
-function updateSetupKicker() {
-  const el = $('#setupKicker');
-  if (!el) return;
-  const running = !!session && session.status === 'running';
-  el.textContent = running
-    ? `live · ${fmtInt(settings.wpm)} wpm · ${settings.chunkSize}w chunks`
-    : (session && session.status === 'paused' ? 'paused — change pace freely' : 'practice console');
-  const wrap = el.closest('.home-kicker');
-  if (wrap) wrap.classList.toggle('is-live', running);
 }
 
 function syncSpeedUI(opts = {}) {
@@ -530,14 +439,10 @@ function syncSpeedUI(opts = {}) {
     range.style.setProperty('--fill', `${wpmToSlider(settings.wpm)}%`);
     range.setAttribute('aria-valuetext', `${fmtInt(settings.wpm)} words per minute`);
   }
-  const slower = settings.wpm <= WPM_MIN;
-  const faster = settings.wpm >= WPM_MAX;
-  ['#wpmDown', '#btnWpmDown'].forEach(s => { const el = $(s); if (el) el.disabled = slower; });
-  ['#wpmUp', '#btnWpmUp'].forEach(s => { const el = $(s); if (el) el.disabled = faster; });
-  const smaller = settings.chunkSize <= 1;
-  const bigger = settings.chunkSize >= 4;
-  ['#btnChunkDown'].forEach(s => { const el = $(s); if (el) el.disabled = smaller; });
-  ['#btnChunkUp'].forEach(s => { const el = $(s); if (el) el.disabled = bigger; });
+  const chunkDown = $('#chunkDown');
+  if (chunkDown) chunkDown.disabled = settings.chunkSize <= 1;
+  const chunkUp = $('#chunkUp');
+  if (chunkUp) chunkUp.disabled = settings.chunkSize >= 4;
 }
 
 /* ---------- timing ---------- */
@@ -904,7 +809,6 @@ function finalizeResults(comp01) {
   paintResults({ wpm, eff, comp, focus, secs, entry, isPB });
   session.status = 'done';
   refreshDailyButton();
-  renderHomeStrip();
 }
 
 function paintResults({ wpm, eff, comp, focus, secs, entry, isPB }) {
@@ -1505,7 +1409,6 @@ function applySettingsToUI() {
   $('#setFontFamily').value = settings.fontFamily;
   $('#setPivot').checked = settings.pivot;
   $('#setShowPassage').checked = settings.showPassage;
-  $('#setContext').checked = settings.context;
   $('#setPunctStrength').value = settings.punctStrength;
   $('#setRamp').checked = settings.ramp;
   $('#setSmart').checked = settings.smartChunks;
@@ -1519,39 +1422,29 @@ function applySettingsToUI() {
   updateTransport();
   if (session) {
     const c = session.chunks[previewIdx != null ? previewIdx : session.idx];
-    if (c) { fitChunk(c.text); renderContext(c, true); }
+    if (c) fitChunk(c.text);
   }
 }
 
 function syncPills(opts = {}) {
-  $$('#configBar [data-mode]').forEach(b => {
+  $$('#setupBar [data-mode]').forEach(b => {
     const on = b.dataset.mode === settings.mode;
     b.classList.toggle('active', on);
     b.setAttribute('aria-pressed', on);
   });
-  $$('#configBar [data-chunk]').forEach(b => {
-    const on = Number(b.dataset.chunk) === settings.chunkSize;
-    b.classList.toggle('active', on);
-    b.setAttribute('aria-pressed', on);
-  });
-  $$('#configBar [data-smart]').forEach(b => {
-    b.classList.toggle('active', settings.smartChunks);
-    b.setAttribute('aria-pressed', settings.smartChunks);
-  });
-  $$('#configBar [data-len]').forEach(b => {
+  $$('#setupBar [data-len]').forEach(b => {
     const on = b.dataset.len === settings.length;
     b.classList.toggle('active', on);
     b.setAttribute('aria-pressed', on);
   });
-  $$('#configBar [data-time]').forEach(b => {
+  $$('#setupBar [data-time]').forEach(b => {
     const on = Number(b.dataset.time) === settings.timeLimit;
     b.classList.toggle('active', on);
     b.setAttribute('aria-pressed', on);
   });
   $('#lenPills').classList.toggle('hidden', settings.mode !== 'passage');
   $('#timePills').classList.toggle('hidden', settings.mode !== 'time');
-  $('#speedPills').classList.toggle('hidden', settings.mode === 'zen');
-  $('#speedSep').classList.toggle('hidden', settings.mode === 'zen');
+  $('#speedGroup').classList.toggle('hidden', settings.mode === 'zen');
   updateTransport(opts);
 }
 
@@ -1603,8 +1496,6 @@ function stepWpm(dir) {
   const target = clamp(settings.wpm + dir * wpmStep(settings.wpm), WPM_MIN, WPM_MAX);
   setWpm(Math.round(target / 5) * 5);
 }
-function nudgeWpm(delta) { setWpm(settings.wpm + delta); }
-
 function setChunkSize(size) {
   const next = clamp(Math.round(size), 1, 4);
   const changed = next !== settings.chunkSize;
@@ -1648,12 +1539,10 @@ function rebuildChunks() {
   const old = session.chunks[from];
   const cursor = old ? old.start : session.words.length;
   const chunks = buildChunks(session.words, settings.chunkSize, settings.smartChunks);
-  const sentences = annotateSentences(session.words, chunks);
   let idx = chunks.findIndex(c => cursor >= c.start && cursor < c.end);
   if (idx < 0) idx = Math.max(0, chunks.length - 1);
 
   session.chunks = chunks;
-  session.sentences = sentences;
   session.chunkSize = settings.chunkSize;
   session.smart = settings.smartChunks;
   session.idx = idx;
@@ -1681,28 +1570,6 @@ function rebuildChunks() {
   setOverlay(running ? 'hidden' : session.status === 'paused' ? 'paused' : 'idle');
   updateTransport();
   if (running) scheduleLoop();
-}
-
-function renderHomeStrip() {
-  const streakEl = $('#homeStreak');
-  if (!streakEl) return;
-  const { cur } = computeStreaks(runs);
-  const today = todayKey();
-  let wordsToday = 0;
-  let bestWpm = 0;
-  runs.forEach(r => {
-    if (!r) return;
-    if (r.ts && dayKey(new Date(r.ts)) === today) wordsToday += Number(r.words) || 0;
-    const w = Number(r.wpm) || 0;
-    if (w > bestWpm) bestWpm = w;
-  });
-  if (!bestWpm && best.legacy) {
-    const m = String(best.legacy.label || '').match(/[\d,]+/);
-    if (m) bestWpm = Number(m[0].replace(/,/g, '')) || 0;
-  }
-  streakEl.textContent = fmtInt(cur);
-  $('#homeWords').textContent = fmtInt(wordsToday);
-  $('#homeBest').textContent = bestWpm ? fmtInt(bestWpm) : '—';
 }
 
 /* ---------- custom text ---------- */
@@ -1757,7 +1624,7 @@ function refreshDailyButton() {
   const btn = $('#btnDaily');
   if (!btn) return;
   const done = dailyState.date === todayKey();
-  btn.textContent = done ? 'daily done ✓' : 'daily challenge';
+  btn.textContent = done ? 'daily ✓' : 'daily';
   btn.classList.toggle('is-done', done);
 }
 
@@ -1882,7 +1749,6 @@ const SHORTCUTS = [
   { keys: ['esc'], label: 'quit session / close panels' },
   { keys: ['1', '4'], label: 'answer comprehension question' },
   { keys: ['v'], label: 'toggle passage below' },
-  { keys: ['c'], label: 'toggle current sentence' },
   { keys: ['m'], label: 'toggle smart chunks' },
   { keys: ['f'], label: 'fullscreen' },
   { keys: ['t'], label: 'theme picker' },
@@ -1893,9 +1759,7 @@ const SHORTCUTS = [
 function renderShortcutList() {
   $('#shortcutList').innerHTML = SHORTCUTS.map(s => `
     <div class="shortcut-row"><span>${s.label}</span><span class="keys">${s.keys.map(k => `<kbd>${k}</kbd>`).join('')}</span></div>`).join('');
-  $('#footerKeys').innerHTML = SHORTCUTS.slice(0, 5).map(s =>
-    `<span>${s.keys.map(k => `<kbd>${k}</kbd>`).join('')} ${s.label.split('·')[0].trim()}</span>`).join('') +
-    '<button class="footer-link" id="btnFooterShortcuts" type="button">all shortcuts</button>';
+  $('#footerKeys').innerHTML = '<button class="footer-link" id="btnFooterShortcuts" type="button"><kbd>?</kbd> shortcuts</button>';
 }
 
 /* ============================================================
@@ -1927,54 +1791,32 @@ function attachEvents() {
     if (cb) cb();
   });
 
-  // config pills
-  $('#configBar').addEventListener('click', e => {
-    const pill = e.target.closest('.pill');
-    if (!pill) return;
-    if (pill.dataset.mode) { selectMode(pill.dataset.mode); return; }
-    if (pill.dataset.chunk) { setChunkSize(Number(pill.dataset.chunk)); return; }
-    if (pill.dataset.smart) { toggleSmart(); return; }
-    if (pill.dataset.len) {
-      settings.length = pill.dataset.len; saveSettings(); syncPills();
+  // setup bar
+  $('#setupBar').addEventListener('click', e => {
+    const opt = e.target.closest('[data-mode], [data-len], [data-time]');
+    if (!opt) return;
+    if (opt.dataset.mode) { selectMode(opt.dataset.mode); return; }
+    if (opt.dataset.len) {
+      settings.length = opt.dataset.len; saveSettings(); syncPills();
       if (settings.mode === 'passage') newSession({ same: false });
       return;
     }
-    if (pill.dataset.time) {
-      settings.timeLimit = Number(pill.dataset.time); saveSettings(); syncPills();
+    if (opt.dataset.time) {
+      settings.timeLimit = Number(opt.dataset.time); saveSettings(); syncPills();
       if (settings.mode === 'time') newSession({ same: true });
       return;
     }
   });
 
-  // speed slider + live steppers
+  // live speed slider and chunk stepper
   const wpmRange = $('#wpmRange');
   if (wpmRange) {
     wpmRange.addEventListener('input', e => setWpm(sliderToWpm(Number(e.target.value)), { fromSlider: true }));
   }
-  ['#wpmDown', '#btnWpmDown'].forEach(sel => {
-    const el = $(sel);
-    if (el) el.addEventListener('click', () => stepWpm(-1));
-  });
-  ['#wpmUp', '#btnWpmUp'].forEach(sel => {
-    const el = $(sel);
-    if (el) el.addEventListener('click', () => stepWpm(1));
-  });
-  ['#btnChunkDown'].forEach(sel => {
-    const el = $(sel);
-    if (el) el.addEventListener('click', () => nudgeChunk(-1));
-  });
-  ['#btnChunkUp'].forEach(sel => {
-    const el = $(sel);
-    if (el) el.addEventListener('click', () => nudgeChunk(1));
-  });
+  $('#chunkDown').addEventListener('click', () => nudgeChunk(-1));
+  $('#chunkUp').addEventListener('click', () => nudgeChunk(1));
 
   // stage / transport
-  $('#btnOverlayStart').addEventListener('click', () => { if (session) startReading(); });
-  $('#btnPlay').addEventListener('click', () => {
-    if (!session) return;
-    if (session.status === 'quiz' || session.status === 'done') { restartSame(); return; }
-    toggleStartPause();
-  });
   $('#btnPrevChunk').addEventListener('click', zenPrev);
   $('#btnNextChunk').addEventListener('click', zenNext);
   $('#btnSkipPassage').addEventListener('click', () => {
@@ -2080,7 +1922,6 @@ function attachEvents() {
   });
   $('#setPivot').addEventListener('change', e => { settings.pivot = e.target.checked; saveSettings(); applySettingsToUI(); });
   $('#setShowPassage').addEventListener('change', e => { settings.showPassage = e.target.checked; saveSettings(); applySettingsToUI(); });
-  $('#setContext').addEventListener('change', e => { settings.context = e.target.checked; saveSettings(); applySettingsToUI(); });
   $('#setPunctStrength').addEventListener('change', e => { settings.punctStrength = e.target.value; saveSettings(); });
   $('#setRamp').addEventListener('change', e => { settings.ramp = e.target.checked; saveSettings(); });
   $('#setSmart').addEventListener('change', e => {
@@ -2304,10 +2145,6 @@ function onKeyDown(e) {
       settings.showPassage = !settings.showPassage; saveSettings(); applySettingsToUI();
       toast(`passage ${settings.showPassage ? 'shown' : 'hidden'}`);
       return;
-    case 'c':
-      settings.context = !settings.context; saveSettings(); applySettingsToUI();
-      toast(`sentence ${settings.context ? 'shown' : 'hidden'}`);
-      return;
     case 'm':
       toggleSmart();
       return;
@@ -2360,7 +2197,6 @@ function init() {
   attachEvents();
   renderShortcutList();
   refreshDailyButton();
-  renderHomeStrip();
   if (settings.mode === 'custom' && !customSaved.text) {
     settings.mode = 'passage';
     saveSettings();

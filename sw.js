@@ -1,7 +1,7 @@
 /* chunky service worker — network first, cache fallback.
    Keeps the app installable and usable offline without ever
    pinning a stale build while you are developing. */
-const CACHE = 'chunky-v2';
+const CACHE = 'chunky-v3';
 const ASSETS = [
   './',
   'index.html',
