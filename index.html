@@ -76,110 +76,139 @@
   <section id="view-test" class="view active" aria-labelledby="practiceHeading">
     <h1 class="sr-only" id="practiceHeading" tabindex="-1">practice</h1>
 
-    <div class="config-bar" id="configBar">
-      <div class="config-group" role="group" aria-label="mode">
-        <button class="pill active" data-mode="passage" type="button">passage</button>
-        <button class="pill" data-mode="time" type="button">time</button>
-        <button class="pill" data-mode="zen" type="button">zen</button>
-        <button class="pill" data-mode="ramp" type="button">ramp</button>
-        <button class="pill" data-mode="custom" type="button">custom</button>
-      </div>
-      <span class="config-sep" aria-hidden="true"></span>
-      <div class="config-group" role="group" aria-label="chunk size">
-        <span class="group-label">chunk</span>
-        <button class="pill" data-chunk="1" type="button">1</button>
-        <button class="pill active" data-chunk="2" type="button">2</button>
-        <button class="pill" data-chunk="3" type="button">3</button>
-        <button class="pill" data-chunk="4" type="button">4</button>
-        <button class="pill pill-smart" data-smart="1" type="button" aria-pressed="true" title="keep phrases together instead of cutting every N words">smart</button>
-      </div>
-      <span class="config-sep" aria-hidden="true"></span>
-
-      <div class="config-group" id="lenPills" role="group" aria-label="passage length">
-        <span class="group-label">length</span>
-        <button class="pill" data-len="short" type="button">short</button>
-        <button class="pill active" data-len="medium" type="button">medium</button>
-        <button class="pill" data-len="long" type="button">long</button>
+    <div class="home">
+      <div class="home-head">
+        <div class="home-intro">
+          <span class="home-kicker"><span class="live-dot" aria-hidden="true"></span><span id="setupKicker">practice console</span></span>
+          <p class="home-sub">one pivot, a few words at a time — set the pace, then let it run.</p>
+        </div>
+        <div class="home-strip" id="homeStrip" aria-label="today at a glance">
+          <div class="home-stat"><span class="home-stat-num" id="homeStreak">0</span><span class="home-stat-label">day streak</span></div>
+          <div class="home-stat"><span class="home-stat-num" id="homeWords">0</span><span class="home-stat-label">words today</span></div>
+          <div class="home-stat"><span class="home-stat-num" id="homeBest">—</span><span class="home-stat-label">best wpm</span></div>
+        </div>
       </div>
 
-      <div class="config-group hidden" id="timePills" role="group" aria-label="time limit">
-        <span class="group-label">time</span>
-        <button class="pill" data-time="15" type="button">15s</button>
-        <button class="pill" data-time="30" type="button">30s</button>
-        <button class="pill active" data-time="60" type="button">60s</button>
-        <button class="pill" data-time="120" type="button">120s</button>
+      <div class="config-bar" id="configBar">
+        <div class="config-group" role="group" aria-label="mode">
+          <button class="pill active" data-mode="passage" type="button">passage</button>
+          <button class="pill" data-mode="time" type="button">time</button>
+          <button class="pill" data-mode="zen" type="button">zen</button>
+          <button class="pill" data-mode="ramp" type="button">ramp</button>
+          <button class="pill" data-mode="custom" type="button">custom</button>
+        </div>
+        <span class="config-sep" aria-hidden="true"></span>
+        <div class="config-group" role="group" aria-label="chunk size">
+          <span class="group-label">chunk</span>
+          <button class="pill" data-chunk="1" type="button">1</button>
+          <button class="pill active" data-chunk="2" type="button">2</button>
+          <button class="pill" data-chunk="3" type="button">3</button>
+          <button class="pill" data-chunk="4" type="button">4</button>
+          <button class="pill pill-smart" data-smart="1" type="button" aria-pressed="true" title="keep phrases together instead of cutting every N words">smart</button>
+        </div>
+        <span class="config-sep" aria-hidden="true"></span>
+
+        <div class="config-group" id="lenPills" role="group" aria-label="passage length">
+          <span class="group-label">length</span>
+          <button class="pill" data-len="short" type="button">short</button>
+          <button class="pill active" data-len="medium" type="button">medium</button>
+          <button class="pill" data-len="long" type="button">long</button>
+        </div>
+
+        <div class="config-group hidden" id="timePills" role="group" aria-label="time limit">
+          <span class="group-label">time</span>
+          <button class="pill" data-time="15" type="button">15s</button>
+          <button class="pill" data-time="30" type="button">30s</button>
+          <button class="pill active" data-time="60" type="button">60s</button>
+          <button class="pill" data-time="120" type="button">120s</button>
+        </div>
+
+        <span class="config-sep" id="speedSep" aria-hidden="true"></span>
+        <div class="config-group speed-group" id="speedPills" role="group" aria-label="reading speed">
+          <span class="group-label">speed</span>
+          <button class="step-btn" id="wpmDown" type="button" aria-label="slower">−</button>
+          <input class="speed-range" id="wpmRange" type="range" min="0" max="100" step="1" value="36" aria-label="reading speed in words per minute" />
+          <button class="step-btn" id="wpmUp" type="button" aria-label="faster">+</button>
+          <span class="target-wpm" id="targetWpm">300<small>wpm</small></span>
+        </div>
       </div>
 
-      <span class="config-sep" id="speedSep" aria-hidden="true"></span>
-      <div class="config-group" id="speedPills" role="group" aria-label="reading speed">
-        <span class="group-label">speed</span>
-        <button class="pill" data-wpm="150" type="button">150</button>
-        <button class="pill" data-wpm="200" type="button">200</button>
-        <button class="pill" data-wpm="250" type="button">250</button>
-        <button class="pill active" data-wpm="300" type="button">300</button>
-        <button class="pill" data-wpm="350" type="button">350</button>
-        <button class="pill" data-wpm="400" type="button">400</button>
-        <button class="pill" data-wpm="500" type="button">500</button>
-        <span class="target-wpm" id="targetWpm">300<small>wpm</small></span>
+      <div class="console">
+        <div class="stage-top">
+          <span class="stage-title" id="stageTitle">passage — the hidden life of bees</span>
+          <span class="stage-meta" id="stageMeta">medium · 184 words · 3 questions</span>
+        </div>
+
+        <div class="stage" id="stage" aria-label="reading stage">
+          <div class="guide guide-top" aria-hidden="true"></div>
+          <div class="guide guide-bottom" aria-hidden="true"></div>
+          <div class="pivot-line" aria-hidden="true"></div>
+          <div class="rsvp-line" id="rsvpLine">
+            <span class="rsvp-pre" id="chunkPre">the qui</span><span class="rsvp-pivot" id="chunkPivot">c</span><span class="rsvp-post" id="chunkPost">k brown</span>
+          </div>
+          <div class="stage-overlay" id="stageOverlay">
+            <span class="overlay-kicker" id="overlayKicker">passage mode</span>
+            <div class="overlay-big" id="overlayTitle">press <kbd>space</kbd> to start<span class="caret-blink" aria-hidden="true"></span></div>
+            <div class="overlay-sub" id="overlaySub">keep your eyes on the pivot — let the words come to you</div>
+            <div class="overlay-best" id="overlayBest"></div>
+            <button class="btn primary overlay-btn" id="btnOverlayStart" type="button">
+              <svg class="ic-play" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>
+              start reading
+            </button>
+          </div>
+        </div>
+
+        <div class="transport" id="transport">
+          <div class="transport-main">
+            <button class="trans-btn" id="btnPrevChunk" type="button" aria-label="previous chunk" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <button class="trans-btn trans-play" id="btnPlay" type="button" aria-label="start reading">
+              <svg class="ic-play" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>
+              <svg class="ic-pause" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+              <span id="playLabel">start</span>
+            </button>
+            <button class="trans-btn" id="btnNextChunk" type="button" aria-label="next chunk" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+          <span class="trans-sep" aria-hidden="true"></span>
+          <div class="trans-tuning" aria-label="live speed and chunk controls">
+            <div class="tune-group" role="group" aria-label="live speed">
+              <span class="tune-label">wpm</span>
+              <button class="tune-btn" id="btnWpmDown" type="button" aria-label="slower">−</button>
+              <span class="tune-val" id="transWpm">300</span>
+              <button class="tune-btn" id="btnWpmUp" type="button" aria-label="faster">+</button>
+            </div>
+            <div class="tune-group" role="group" aria-label="live chunk size">
+              <span class="tune-label">chunk</span>
+              <button class="tune-btn" id="btnChunkDown" type="button" aria-label="smaller chunks">−</button>
+              <span class="tune-val" id="transChunk">2</span>
+              <button class="tune-btn" id="btnChunkUp" type="button" aria-label="larger chunks">+</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="context-line" id="contextLine" aria-label="current sentence"></div>
+
+        <div class="hud">
+          <span class="hud-item"><span class="hud-label">chunk</span><span class="hud-num" id="hudChunk">0 / 0</span></span>
+          <span class="hud-item"><span class="hud-label">speed</span><span class="hud-num accent" id="hudWpm">0</span></span>
+          <span class="hud-item"><span class="hud-label" id="hudTimeLabel">time</span><span class="hud-num" id="hudTime">0:00</span></span>
+        </div>
+
+        <div class="progress-track" id="progressTrack" role="progressbar" aria-label="passage progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
       </div>
-    </div>
 
-    <div class="stage-top">
-      <span class="stage-title" id="stageTitle">passage — the hidden life of bees</span>
-      <span class="stage-meta" id="stageMeta">medium · 184 words · 3 questions</span>
-    </div>
+      <div class="passage" id="passage" aria-label="passage text"></div>
 
-    <div class="stage" id="stage" aria-label="reading stage">
-      <div class="guide guide-top" aria-hidden="true"></div>
-      <div class="guide guide-bottom" aria-hidden="true"></div>
-      <div class="pivot-line" aria-hidden="true"></div>
-      <div class="rsvp-line" id="rsvpLine">
-        <span class="rsvp-pre" id="chunkPre">the qui</span><span class="rsvp-pivot" id="chunkPivot">c</span><span class="rsvp-post" id="chunkPost">k brown</span>
+      <div class="stage-foot">
+        <button class="btn ghost small" id="btnCustomText" type="button">paste your own text</button>
+        <button class="btn ghost small" id="btnSkipPassage" type="button">different passage</button>
+        <button class="btn ghost small" id="btnDaily" type="button">daily challenge</button>
       </div>
-      <div class="stage-overlay" id="stageOverlay">
-        <div class="overlay-big" id="overlayTitle">press <kbd>space</kbd> to start<span class="caret-blink" aria-hidden="true"></span></div>
-        <div class="overlay-sub" id="overlaySub">keep your eyes on the pivot — let the words come to you</div>
-        <div class="overlay-best" id="overlayBest"></div>
-        <button class="btn primary overlay-btn" id="btnOverlayStart" type="button">
-          <svg class="ic-play" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>
-          start reading
-        </button>
-      </div>
-    </div>
-
-    <div class="transport" id="transport">
-      <button class="trans-btn" id="btnPrevChunk" type="button" aria-label="previous chunk" disabled>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
-      </button>
-      <button class="trans-btn trans-play" id="btnPlay" type="button" aria-label="start reading">
-        <svg class="ic-play" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>
-        <svg class="ic-pause" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
-        <span id="playLabel">start</span>
-      </button>
-      <button class="trans-btn" id="btnNextChunk" type="button" aria-label="next chunk" disabled>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
-      </button>
-      <span class="trans-wpm"><span id="transWpm">300</span><small>wpm</small></span>
-    </div>
-
-    <div class="context-line" id="contextLine" aria-label="current sentence"></div>
-
-    <div class="hud">
-      <span class="hud-item"><span class="hud-num" id="hudChunk">chunk 0 / 0</span></span>
-      <span class="hud-item"><span class="hud-num accent" id="hudWpm">0</span><span class="hud-unit"> wpm</span></span>
-      <span class="hud-item"><span class="hud-num" id="hudTime">0:00</span></span>
-    </div>
-
-    <div class="progress-track" id="progressTrack" role="progressbar" aria-label="passage progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-      <div class="progress-fill" id="progressFill"></div>
-    </div>
-
-    <div class="passage" id="passage" aria-label="passage text"></div>
-
-    <div class="stage-foot">
-      <button class="btn ghost small" id="btnCustomText" type="button">paste your own text</button>
-      <button class="btn ghost small" id="btnSkipPassage" type="button">different passage</button>
-      <button class="btn ghost small" id="btnDaily" type="button">daily challenge</button>
     </div>
   </section>
 
@@ -344,7 +373,7 @@
       </div>
 
       <div class="panel">
-        <div class="panel-head"><span class="panel-title">achievements</span><span class="panel-sub" id="achProgress">0 / 14 unlocked</span></div>
+        <div class="panel-head"><span class="panel-title">achievements</span><span class="panel-sub" id="achProgress">0 / 16 unlocked</span></div>
         <div class="ach-grid" id="achGrid"></div>
       </div>
 
@@ -370,7 +399,7 @@
 
 <footer class="footer">
   <div class="footer-left" id="footerKeys"></div>
-  <div class="footer-right">read in chunks, not letters</div>
+  <div class="footer-right"><a class="footer-link" href="https://github.com/Abhinav-Prabhakar/Chunky" target="_blank" rel="noopener">github</a> · read in chunks, not letters</div>
 </footer>
 
 <!-- ================= SETTINGS MODAL ================= -->

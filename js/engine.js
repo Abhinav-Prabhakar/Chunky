@@ -7,6 +7,19 @@
 
 /* ---------- tiny helpers ---------- */
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+
+/* Reading speed lives on a log scale: 80 wpm to 3000 wpm is a 37× range,
+   and a linear slider would bunch every useful practice pace into the first
+   eighth of the track. The slider is 0…100; these two convert both ways. */
+const WPM_MIN = 80;
+const WPM_MAX = 3000;
+const WPM_LOG_RANGE = Math.log(WPM_MAX / WPM_MIN);
+const wpmToSlider = wpm => Math.round(
+  100 * Math.log(clamp(Number(wpm) || WPM_MIN, WPM_MIN, WPM_MAX) / WPM_MIN) / WPM_LOG_RANGE
+);
+const sliderToWpm = pos => Math.round(
+  WPM_MIN * Math.pow(WPM_MAX / WPM_MIN, clamp(Number(pos) || 0, 0, 100) / 100)
+);
 const pad2 = n => String(n).padStart(2, '0');
 const fmtInt = n => Math.round(n).toLocaleString('en-US');
 const fmtClock = totalSecs => {
@@ -100,7 +113,7 @@ function loadSettings() {
   if (!PUNCT_MULT[s.punctStrength]) s.punctStrength = 'normal';
   s.fontSize = clamp(Number(s.fontSize) || 64, 36, 128);
   s.chunkSize = clamp(Number(s.chunkSize) || 2, 1, 4);
-  s.wpm = clamp(Number(s.wpm) || 300, 80, 750);
+  s.wpm = clamp(Number(s.wpm) || 300, WPM_MIN, WPM_MAX);
   s.goal = clamp(Number(s.goal) || 0, 0, 5000);
   s.v = 3;
   return s;
@@ -274,6 +287,8 @@ const ACHIEVEMENTS = [
   { id: 'streak30', name: 'unstoppable',   desc: 'read 30 days in a row',                  test: (h, c) => c.bestRun >= 30 },
   { id: 'speed400', name: 'speed demon',   desc: '400+ wpm with comprehension measured',   test: h => h.some(s => s.wpm >= 400 && s.comp != null) },
   { id: 'warp600',  name: 'warp factor',   desc: '600+ wpm with comprehension measured',   test: h => h.some(s => s.wpm >= 600 && s.comp != null) },
+  { id: 'warp1200', name: 'ludicrous speed', desc: '1,200+ wpm with comprehension measured', test: h => h.some(s => s.wpm >= 1200 && s.comp != null) },
+  { id: 'warp2500', name: 'overdrive',     desc: '2,500+ wpm with comprehension measured',  test: h => h.some(s => s.wpm >= 2500 && s.comp != null) },
   { id: 'perfect',  name: 'razor sharp',   desc: '100% comprehension in a scored session', test: h => h.some(s => s.comp === 100) },
   { id: 'scholar',  name: 'scholar',       desc: '10 perfect-comprehension sessions',      test: h => h.filter(s => s.comp === 100).length >= 10 },
   { id: 'marathon', name: 'marathoner',    desc: 'read 25,000 words in total',             test: h => h.reduce((a, s) => a + (s.words || 0), 0) >= 25000 },

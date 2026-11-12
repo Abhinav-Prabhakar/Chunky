@@ -62,6 +62,9 @@ let chunkEls = [];
 let measureCtx = null;
 let wakeLock = null;
 let previewIdx = null;
+let lastContextAt = 0;
+let lastScrollAt = 0;
+let lastTickAt = 0;
 
 /* ============================================================
    THEME
@@ -161,6 +164,7 @@ function switchView(name, opts = {}) {
   if (onPractice) navT.setAttribute('aria-current', 'page'); else navT.removeAttribute('aria-current');
   if (name === 'stats') navS.setAttribute('aria-current', 'page'); else navS.removeAttribute('aria-current');
   if (name === 'stats') renderStats();
+  if (name === 'test') renderHomeStrip();
   if (opts.hash !== false) setHash(name);
   if (changed) announce(name);
   window.scrollTo({ top: 0 });
@@ -250,6 +254,7 @@ function newSession(opts = {}) {
     sentences,
     chunks,
     totalWords: words.length,
+    wordOffset: chunks[startIdx] ? chunks[startIdx].start : 0,
     idx: startIdx,
     wordsRead: 0,
     status: 'idle',
@@ -258,6 +263,8 @@ function newSession(opts = {}) {
     startStamp: 0,
     remainingMs: 0,
     nextChunkAt: 0,
+    chunkStartAt: 0,
+    chunkDur: 0,
     limitMs: mode === 'time' ? settings.timeLimit * 1000 : null,
     samples: [],
     finalWpm: 0,
@@ -285,7 +292,7 @@ function newSession(opts = {}) {
   renderPassageText();
   $('#passage').scrollTop = 0;
   lastMarkIdx = -1;
-  renderChunk(startIdx);
+  renderChunk(startIdx, { force: true });
   updateProgress(startIdx);
   renderHUD();
   setOverlay('idle');
@@ -295,6 +302,7 @@ function newSession(opts = {}) {
   if (c0) fitChunk(c0.text);
   refreshDailyButton();
   syncPills();
+  renderHomeStrip();
 }
 
 /* ---------- rendering the reading surface ---------- */
@@ -327,19 +335,19 @@ function fitChunk(text) {
   line.style.setProperty('--fit-size', size + 'px');
 }
 
-function renderChunk(i) {
+function renderChunk(i, opts = {}) {
   if (!session) return;
   const c = session.chunks[i];
   if (!c) return;
   const p = orpIndex(c.text);
   setChunkDisplay(c.text.slice(0, p), c.text.slice(p, p + 1), c.text.slice(p + 1));
   fitChunk(c.text);
-  markPassageProgress(i);
+  markPassageProgress(i, opts.force);
   updateProgress(i);
-  renderContext(c);
+  renderContext(c, opts.force);
 }
 
-function markPassageProgress(i) {
+function markPassageProgress(i, force = false) {
   if (!chunkEls.length) return;
   const cur = chunkEls[i];
   if (!cur) return;
@@ -361,15 +369,24 @@ function markPassageProgress(i) {
   cur.classList.remove('done');
   cur.classList.add('current');
   lastMarkIdx = i;
-  if (settings.showPassage) {
+  /* scrolling costs layout; at 1000+ wpm the passage box cannot keep up
+     with every chunk anyway, so ease it along a few times a second. */
+  const now = performance.now();
+  if (settings.showPassage && (force || now - lastScrollAt > 110)) {
+    lastScrollAt = now;
     const box = $('#passage');
     box.scrollTop = Math.max(0, cur.offsetTop - box.clientHeight / 2 + cur.offsetHeight / 2);
   }
 }
 
-function renderContext(c) {
+function renderContext(c, force = false) {
   const el = $('#contextLine');
   if (!el) return;
+  if (!force) {
+    const now = performance.now();
+    if (now - lastContextAt < 100) return;
+    lastContextAt = now;
+  }
   if (!settings.context || !session || c.sentence == null || !session.sentences[c.sentence]) {
     el.classList.add('hidden');
     el.textContent = '';
@@ -394,28 +411,32 @@ function renderHUD() {
   if (!session) return;
   const total = session.chunks.length;
   const pos = Math.min(session.idx + (session.status === 'running' ? 1 : 0), total);
-  $('#hudChunk').textContent = `chunk ${pos} / ${total}`;
+  $('#hudChunk').textContent = `${pos} / ${total}`;
   const secs = session.elapsedMs / 1000;
-  const wpm = secs > 0.5 ? Math.round(session.wordsRead / (secs / 60)) : 0;
-  $('#hudWpm').textContent = wpm;
+  const wpm = secs > 0.15 ? Math.round(session.wordsRead / (secs / 60)) : 0;
+  $('#hudWpm').textContent = fmtInt(wpm);
   const timeEl = $('#hudTime');
+  const timeLabel = $('#hudTimeLabel');
   if (session.limitMs) {
+    if (timeLabel) timeLabel.textContent = 'left';
     const remain = Math.max(0, session.limitMs - session.elapsedMs);
     timeEl.textContent = fmtClock(remain / 1000);
     timeEl.style.color = remain < 10000 ? 'var(--error)' : '';
   } else {
+    if (timeLabel) timeLabel.textContent = 'time';
     timeEl.textContent = fmtClock(secs);
     timeEl.style.color = '';
   }
   if (session.mode === 'ramp') {
     const cur = Math.round(effectiveWpm(session.mode, session.wpm, session.idx, total));
-    $('#transWpm').textContent = cur;
+    $('#transWpm').textContent = fmtInt(cur);
   }
 }
 
 /* ---------- overlay & transport ---------- */
 function setOverlay(state) {
   const overlay = $('#stageOverlay');
+  const kicker = $('#overlayKicker');
   const title = $('#overlayTitle');
   const sub = $('#overlaySub');
   const bestEl = $('#overlayBest');
@@ -425,6 +446,12 @@ function setOverlay(state) {
   if (state === 'idle') {
     const b = session ? bestFor(best, session.mode, session.chunkSize) : null;
     bestEl.textContent = b ? `best at this setting — ${b.label}` : (best.legacy ? `personal best — ${best.legacy.label}` : '');
+    if (kicker) kicker.textContent = session.daily ? 'daily challenge'
+      : session.mode === 'time' ? 'time trial'
+        : session.mode === 'zen' ? 'zen mode'
+          : session.mode === 'ramp' ? 'ramp mode'
+            : session.mode === 'custom' ? 'custom text'
+              : 'passage mode';
     if (session.mode === 'zen') {
       title.innerHTML = 'zen mode';
       sub.textContent = 'no timer, no score. space advances one chunk at a time — let the pace come to you.';
@@ -447,6 +474,7 @@ function setOverlay(state) {
     if (startBtn) startBtn.innerHTML = '<svg class="ic-play" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg> start reading';
     if (startBtn) startBtn.classList.remove('hidden');
   } else if (state === 'paused') {
+    if (kicker) kicker.textContent = 'paused';
     title.innerHTML = 'paused';
     sub.textContent = 'space to resume · b to peek at the previous chunk · esc to quit';
     bestEl.textContent = '';
@@ -454,7 +482,7 @@ function setOverlay(state) {
   }
 }
 
-function updateTransport() {
+function updateTransport(opts = {}) {
   const running = !!session && session.status === 'running';
   const zen = !!session && session.mode === 'zen';
   const play = $('#btnPlay');
@@ -468,14 +496,48 @@ function updateTransport() {
     el.setAttribute('aria-disabled', zen ? 'false' : 'true');
   });
   const tw = $('#transWpm');
-  if (session && session.mode === 'ramp') {
-    tw.textContent = Math.round(effectiveWpm(session.mode, session.wpm, session.idx, session.chunks.length));
-  } else if (zen) {
-    tw.textContent = 'manual';
-  } else {
-    tw.textContent = settings.wpm;
+  if (tw) {
+    if (session && session.mode === 'ramp') {
+      tw.textContent = fmtInt(Math.round(effectiveWpm(session.mode, session.wpm, session.idx, session.chunks.length)));
+    } else if (zen) {
+      tw.textContent = 'manual';
+    } else {
+      tw.textContent = fmtInt(settings.wpm);
+    }
   }
-  $('#targetWpm').innerHTML = `${settings.wpm}<small>wpm</small>`;
+  const tc = $('#transChunk');
+  if (tc) tc.textContent = settings.chunkSize;
+  $('#targetWpm').innerHTML = `${fmtInt(settings.wpm)}<small>wpm</small>`;
+  syncSpeedUI(opts);
+  updateSetupKicker();
+}
+
+function updateSetupKicker() {
+  const el = $('#setupKicker');
+  if (!el) return;
+  const running = !!session && session.status === 'running';
+  el.textContent = running
+    ? `live · ${fmtInt(settings.wpm)} wpm · ${settings.chunkSize}w chunks`
+    : (session && session.status === 'paused' ? 'paused — change pace freely' : 'practice console');
+  const wrap = el.closest('.home-kicker');
+  if (wrap) wrap.classList.toggle('is-live', running);
+}
+
+function syncSpeedUI(opts = {}) {
+  const range = $('#wpmRange');
+  if (range) {
+    if (!opts.skipRange) range.value = String(wpmToSlider(settings.wpm));
+    range.style.setProperty('--fill', `${wpmToSlider(settings.wpm)}%`);
+    range.setAttribute('aria-valuetext', `${fmtInt(settings.wpm)} words per minute`);
+  }
+  const slower = settings.wpm <= WPM_MIN;
+  const faster = settings.wpm >= WPM_MAX;
+  ['#wpmDown', '#btnWpmDown'].forEach(s => { const el = $(s); if (el) el.disabled = slower; });
+  ['#wpmUp', '#btnWpmUp'].forEach(s => { const el = $(s); if (el) el.disabled = faster; });
+  const smaller = settings.chunkSize <= 1;
+  const bigger = settings.chunkSize >= 4;
+  ['#btnChunkDown'].forEach(s => { const el = $(s); if (el) el.disabled = smaller; });
+  ['#btnChunkUp'].forEach(s => { const el = $(s); if (el) el.disabled = bigger; });
 }
 
 /* ---------- timing ---------- */
@@ -489,7 +551,7 @@ function durationFor(chunk, idx) {
     const k = clamp(idx / rampLen, 0, 1);
     ms *= 1.55 - 0.55 * easeOut(k);
   }
-  return clamp(ms, 40, 20000);
+  return clamp(ms, 12, 20000);
 }
 
 function loop() {
@@ -510,7 +572,7 @@ function loop() {
 
   if (session.mode !== 'zen') {
     let guard = 0;
-    while (session.status === 'running' && now >= session.nextChunkAt && guard++ < 8) advanceChunk();
+    while (session.status === 'running' && now >= session.nextChunkAt && guard++ < 30) advanceChunk();
   }
 
   if (now - lastHudAt > 100) { renderHUD(); lastHudAt = now; }
@@ -545,12 +607,18 @@ function startReading() {
     session.elapsedMs = 0;
     session.samples = [];
     session.wordsRead = 0;
-    session.nextChunkAt = session.mode === 'zen' ? Infinity : performance.now() + durationFor(session.chunks[session.idx], session.idx);
-    renderChunk(session.idx);
+    const now = performance.now();
+    session.chunkStartAt = now;
+    session.chunkDur = session.mode === 'zen' ? Infinity : durationFor(session.chunks[session.idx], session.idx);
+    session.nextChunkAt = session.mode === 'zen' ? Infinity : now + session.chunkDur;
+    renderChunk(session.idx, { force: true });
   } else {
-    session.startStamp = performance.now();
-    session.nextChunkAt = session.mode === 'zen' ? Infinity : performance.now() + Math.max(16, session.remainingMs);
-    if (previewIdx != null) { previewIdx = null; renderChunk(session.idx); }
+    const now = performance.now();
+    session.startStamp = now;
+    session.chunkStartAt = now;
+    session.chunkDur = session.mode === 'zen' ? Infinity : Math.max(12, session.remainingMs);
+    session.nextChunkAt = session.mode === 'zen' ? Infinity : now + session.chunkDur;
+    if (previewIdx != null) { previewIdx = null; renderChunk(session.idx, { force: true }); }
   }
   setOverlay('hidden');
   updateTransport();
@@ -563,10 +631,11 @@ function pauseReading() {
   if (!session || session.status !== 'running') return;
   session.elapsedMs = session.bankedMs + (performance.now() - session.startStamp);
   session.bankedMs = session.elapsedMs;
-  session.remainingMs = session.mode === 'zen' ? Infinity : Math.max(0, session.nextChunkAt - performance.now());
+  session.remainingMs = session.mode === 'zen' ? Infinity : Math.max(12, session.nextChunkAt - performance.now());
   session.status = 'paused';
   stopLoop();
   releaseWakeLock();
+  renderChunk(session.idx, { force: true });
   setOverlay('paused');
   updateTransport();
   renderHUD();
@@ -583,7 +652,7 @@ function advanceChunk() {
   if (!session || session.status !== 'running') return;
   const c = session.chunks[session.idx];
   if (!c) return finishSession();
-  session.wordsRead += c.wordCount;
+  session.wordsRead = Math.max(session.wordsRead, c.end - (session.wordOffset || 0));
   session.samples.push({ t: Math.max(1, Math.round(session.elapsedMs)), w: session.wordsRead });
   session.idx++;
   if (session.idx >= session.chunks.length) {
@@ -592,8 +661,14 @@ function advanceChunk() {
     return finishSession();
   }
   renderChunk(session.idx);
-  session.nextChunkAt = performance.now() + durationFor(session.chunks[session.idx], session.idx);
-  if (settings.sound) sfx.tick();
+  const dur = durationFor(session.chunks[session.idx], session.idx);
+  const now = performance.now();
+  session.chunkStartAt = now;
+  session.chunkDur = dur;
+  /* schedule from the ideal boundary so high speeds don't drift, but never
+     let a background-stalled tab dump a huge burst of chunks at once. */
+  session.nextChunkAt = Math.max(now - 4, session.nextChunkAt) + dur;
+  if (settings.sound && now - lastTickAt > 90) { lastTickAt = now; sfx.tick(); }
 }
 
 function zenAdvance() {
@@ -609,8 +684,8 @@ function zenPrev() {
   if (!session || session.mode !== 'zen' || session.idx === 0) return;
   if (session.status === 'running') pauseReading();
   session.idx--;
-  session.wordsRead = Math.max(0, session.wordsRead - session.chunks[session.idx].wordCount);
-  renderChunk(session.idx);
+  session.wordsRead = Math.max(0, session.chunks[session.idx].start - (session.wordOffset || 0));
+  renderChunk(session.idx, { force: true });
   updateProgress(session.idx);
   renderHUD();
   setOverlay('hidden');
@@ -632,7 +707,7 @@ function previewPrev() {
   if (session.idx === 0) return;
   const target = session.idx - 1;
   previewIdx = target;
-  renderChunk(target);
+  renderChunk(target, { force: true });
   setOverlay('hidden');
   toast('previous chunk — <strong>space</strong> to resume');
 }
@@ -829,6 +904,7 @@ function finalizeResults(comp01) {
   paintResults({ wpm, eff, comp, focus, secs, entry, isPB });
   session.status = 'done';
   refreshDailyButton();
+  renderHomeStrip();
 }
 
 function paintResults({ wpm, eff, comp, focus, secs, entry, isPB }) {
@@ -1443,11 +1519,11 @@ function applySettingsToUI() {
   updateTransport();
   if (session) {
     const c = session.chunks[previewIdx != null ? previewIdx : session.idx];
-    if (c) { fitChunk(c.text); renderContext(c); }
+    if (c) { fitChunk(c.text); renderContext(c, true); }
   }
 }
 
-function syncPills() {
+function syncPills(opts = {}) {
   $$('#configBar [data-mode]').forEach(b => {
     const on = b.dataset.mode === settings.mode;
     b.classList.toggle('active', on);
@@ -1461,11 +1537,6 @@ function syncPills() {
   $$('#configBar [data-smart]').forEach(b => {
     b.classList.toggle('active', settings.smartChunks);
     b.setAttribute('aria-pressed', settings.smartChunks);
-  });
-  $$('#configBar [data-wpm]').forEach(b => {
-    const on = Number(b.dataset.wpm) === settings.wpm;
-    b.classList.toggle('active', on);
-    b.setAttribute('aria-pressed', on);
   });
   $$('#configBar [data-len]').forEach(b => {
     const on = b.dataset.len === settings.length;
@@ -1481,29 +1552,74 @@ function syncPills() {
   $('#timePills').classList.toggle('hidden', settings.mode !== 'time');
   $('#speedPills').classList.toggle('hidden', settings.mode === 'zen');
   $('#speedSep').classList.toggle('hidden', settings.mode === 'zen');
-  updateTransport();
+  updateTransport(opts);
 }
 
-/* ---------- nudges ---------- */
-function setWpm(v) {
-  settings.wpm = clamp(Math.round(v), 80, 750);
+/* ---------- live speed / chunk changes ---------- */
+function wpmStep(wpm) {
+  if (wpm < 400) return 10;
+  if (wpm < 800) return 25;
+  if (wpm < 1500) return 50;
+  return 100;
+}
+
+function setWpm(v, opts = {}) {
+  const next = clamp(Math.round(v), WPM_MIN, WPM_MAX);
+  const changed = next !== settings.wpm;
+  settings.wpm = next;
   saveSettings();
-  syncPills();
-  if (session) session.wpm = settings.wpm;
+  syncPills({ skipRange: !!opts.fromSlider });
+  if (session) {
+    session.wpm = settings.wpm;
+    if (changed) {
+      if (session.status === 'running') rescheduleCurrentChunk();
+      else if (session.status === 'paused' && session.mode !== 'zen') {
+        const oldDur = session.chunkDur > 0 && isFinite(session.chunkDur) ? session.chunkDur : session.remainingMs;
+        const left = oldDur ? clamp(session.remainingMs / oldDur, 0, 1) : 1;
+        const dur = durationFor(session.chunks[session.idx], session.idx);
+        session.chunkDur = dur;
+        session.remainingMs = dur * left;
+      }
+    }
+  }
   renderHUD();
+}
+
+/* keep the fraction of the current chunk already shown, but rescale the
+   remaining time to the new speed — changing pace mid-chunk feels instant. */
+function rescheduleCurrentChunk() {
+  if (!session || session.status !== 'running' || session.mode === 'zen') return;
+  const now = performance.now();
+  const dur = durationFor(session.chunks[session.idx], session.idx);
+  const oldDur = session.chunkDur > 0 && isFinite(session.chunkDur) ? session.chunkDur : dur;
+  const frac = session.chunkStartAt ? clamp((now - session.chunkStartAt) / oldDur, 0, 1) : 0;
+  session.chunkDur = dur;
+  session.chunkStartAt = now - dur * frac;
+  session.nextChunkAt = session.chunkStartAt + dur;
+  scheduleLoop();
+}
+
+function stepWpm(dir) {
+  const target = clamp(settings.wpm + dir * wpmStep(settings.wpm), WPM_MIN, WPM_MAX);
+  setWpm(Math.round(target / 5) * 5);
 }
 function nudgeWpm(delta) { setWpm(settings.wpm + delta); }
 
 function setChunkSize(size) {
-  settings.chunkSize = clamp(size, 1, 4);
+  const next = clamp(Math.round(size), 1, 4);
+  const changed = next !== settings.chunkSize;
+  settings.chunkSize = next;
   saveSettings();
   syncPills();
-  if (!session) return;
-  if (session.status === 'running' || session.status === 'paused') {
-    toast('chunk size will apply to the next session');
+  if (!session || !changed) return;
+  if (session.status === 'quiz' || session.status === 'done') {
+    toast(`chunk size ${next} — applies to the next session`);
     return;
   }
-  newSession({ same: true, text: session.mode === 'custom' ? session.text : null, resumePos: session.idx });
+  rebuildChunks();
+  if (session.status === 'running' || session.status === 'paused') {
+    toast(`chunk ${next} — applied live`);
+  }
 }
 function nudgeChunk(delta) { setChunkSize(settings.chunkSize + delta); }
 
@@ -1511,10 +1627,82 @@ function toggleSmart() {
   settings.smartChunks = !settings.smartChunks;
   saveSettings();
   applySettingsToUI();
-  if (session && session.status !== 'running' && session.status !== 'paused') {
-    newSession({ same: true, text: session.mode === 'custom' ? session.text : null, resumePos: session.idx });
+  const live = !!(session && (session.status === 'running' || session.status === 'paused'));
+  if (session && session.status !== 'quiz' && session.status !== 'done') rebuildChunks();
+  toast(`smart chunks ${settings.smartChunks ? 'on' : 'off'}${live ? ' — applied live' : ''}`);
+}
+
+/* Rebuild the chunk list in place: same passage, same words, same clock.
+   The chunk that contains the word you were on becomes the new current
+   chunk, so changing width mid-session never skips or repeats a passage. */
+function rebuildChunks() {
+  if (!session || !session.words || !session.words.length) return;
+  const running = session.status === 'running';
+  const now = performance.now();
+  if (running) {
+    session.elapsedMs = session.bankedMs + (now - session.startStamp);
+    session.bankedMs = session.elapsedMs;
+    session.startStamp = now;
   }
-  toast(`smart chunks ${settings.smartChunks ? 'on' : 'off'}`);
+  const from = session.idx;
+  const old = session.chunks[from];
+  const cursor = old ? old.start : session.words.length;
+  const chunks = buildChunks(session.words, settings.chunkSize, settings.smartChunks);
+  const sentences = annotateSentences(session.words, chunks);
+  let idx = chunks.findIndex(c => cursor >= c.start && cursor < c.end);
+  if (idx < 0) idx = Math.max(0, chunks.length - 1);
+
+  session.chunks = chunks;
+  session.sentences = sentences;
+  session.chunkSize = settings.chunkSize;
+  session.smart = settings.smartChunks;
+  session.idx = idx;
+  const startWord = chunks[idx] ? chunks[idx].start : session.words.length;
+  session.wordsRead = Math.max(session.wordsRead, Math.max(0, startWord - (session.wordOffset || 0)));
+  session.samples.push({ t: Math.max(1, Math.round(session.elapsedMs)), w: session.wordsRead });
+
+  previewIdx = null;
+  lastMarkIdx = -1;
+  renderPassageText();
+  renderChunk(idx, { force: true });
+  updateProgress(idx);
+  renderHUD();
+
+  if (session.mode === 'zen') {
+    session.remainingMs = Infinity;
+    session.chunkDur = Infinity;
+  } else {
+    const dur = durationFor(chunks[idx], idx);
+    session.remainingMs = dur;
+    session.chunkDur = dur;
+    session.chunkStartAt = now;
+    if (running) session.nextChunkAt = now + dur;
+  }
+  setOverlay(running ? 'hidden' : session.status === 'paused' ? 'paused' : 'idle');
+  updateTransport();
+  if (running) scheduleLoop();
+}
+
+function renderHomeStrip() {
+  const streakEl = $('#homeStreak');
+  if (!streakEl) return;
+  const { cur } = computeStreaks(runs);
+  const today = todayKey();
+  let wordsToday = 0;
+  let bestWpm = 0;
+  runs.forEach(r => {
+    if (!r) return;
+    if (r.ts && dayKey(new Date(r.ts)) === today) wordsToday += Number(r.words) || 0;
+    const w = Number(r.wpm) || 0;
+    if (w > bestWpm) bestWpm = w;
+  });
+  if (!bestWpm && best.legacy) {
+    const m = String(best.legacy.label || '').match(/[\d,]+/);
+    if (m) bestWpm = Number(m[0].replace(/,/g, '')) || 0;
+  }
+  streakEl.textContent = fmtInt(cur);
+  $('#homeWords').textContent = fmtInt(wordsToday);
+  $('#homeBest').textContent = bestWpm ? fmtInt(bestWpm) : '—';
 }
 
 /* ---------- custom text ---------- */
@@ -1688,7 +1876,7 @@ const SHORTCUTS = [
   { keys: ['space'], label: 'start / pause reading' },
   { keys: ['enter'], label: 'start · next passage on results' },
   { keys: ['r'], label: 'restart this passage' },
-  { keys: ['←', '→'], label: 'speed −25 / +25 wpm' },
+  { keys: ['←', '→'], label: 'speed down / up' },
   { keys: ['↑', '↓'], label: 'chunk size − / +' },
   { keys: ['b'], label: 'peek at the previous chunk' },
   { keys: ['esc'], label: 'quit session / close panels' },
@@ -1746,7 +1934,6 @@ function attachEvents() {
     if (pill.dataset.mode) { selectMode(pill.dataset.mode); return; }
     if (pill.dataset.chunk) { setChunkSize(Number(pill.dataset.chunk)); return; }
     if (pill.dataset.smart) { toggleSmart(); return; }
-    if (pill.dataset.wpm) { setWpm(Number(pill.dataset.wpm)); return; }
     if (pill.dataset.len) {
       settings.length = pill.dataset.len; saveSettings(); syncPills();
       if (settings.mode === 'passage') newSession({ same: false });
@@ -1757,6 +1944,28 @@ function attachEvents() {
       if (settings.mode === 'time') newSession({ same: true });
       return;
     }
+  });
+
+  // speed slider + live steppers
+  const wpmRange = $('#wpmRange');
+  if (wpmRange) {
+    wpmRange.addEventListener('input', e => setWpm(sliderToWpm(Number(e.target.value)), { fromSlider: true }));
+  }
+  ['#wpmDown', '#btnWpmDown'].forEach(sel => {
+    const el = $(sel);
+    if (el) el.addEventListener('click', () => stepWpm(-1));
+  });
+  ['#wpmUp', '#btnWpmUp'].forEach(sel => {
+    const el = $(sel);
+    if (el) el.addEventListener('click', () => stepWpm(1));
+  });
+  ['#btnChunkDown'].forEach(sel => {
+    const el = $(sel);
+    if (el) el.addEventListener('click', () => nudgeChunk(-1));
+  });
+  ['#btnChunkUp'].forEach(sel => {
+    const el = $(sel);
+    if (el) el.addEventListener('click', () => nudgeChunk(1));
   });
 
   // stage / transport
@@ -1789,7 +1998,7 @@ function attachEvents() {
     if (Math.abs(dx) < 12 && Math.abs(dy) < 12) { if (session) toggleStartPause(); return; }
     if (Math.abs(dx) > Math.abs(dy)) {
       if (session && session.mode === 'zen') { if (dx < 0) zenAdvance(); else zenPrev(); }
-      else nudgeWpm(dx < 0 ? -25 : 25);
+      else stepWpm(dx < 0 ? -1 : 1);
     } else {
       nudgeChunk(dy < 0 ? 1 : -1);
     }
@@ -2087,8 +2296,8 @@ function onKeyDown(e) {
     case 'p':
       if (testActive && session && session.mode === 'zen') { e.preventDefault(); zenPrev(); }
       return;
-    case 'ArrowLeft': if (testActive) { e.preventDefault(); nudgeWpm(-25); } return;
-    case 'ArrowRight': if (testActive) { e.preventDefault(); nudgeWpm(25); } return;
+    case 'ArrowLeft': if (testActive) { e.preventDefault(); stepWpm(-1); } return;
+    case 'ArrowRight': if (testActive) { e.preventDefault(); stepWpm(1); } return;
     case 'ArrowUp': if (testActive) { e.preventDefault(); nudgeChunk(-1); } return;
     case 'ArrowDown': if (testActive) { e.preventDefault(); nudgeChunk(1); } return;
     case 'v':
@@ -2151,6 +2360,7 @@ function init() {
   attachEvents();
   renderShortcutList();
   refreshDailyButton();
+  renderHomeStrip();
   if (settings.mode === 'custom' && !customSaved.text) {
     settings.mode = 'passage';
     saveSettings();

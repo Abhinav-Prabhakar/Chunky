@@ -9,13 +9,16 @@ what went past. No build step, no framework, no account — plain HTML, CSS and 
 - **RSVP chunk reading** with 1–4 word chunks, pivot-letter alignment, punctuation
   pauses, an adaptive speed ramp and phrase-aware "smart chunks" that avoid breaking
   on `the` / `of` / `and`.
+- **Up to 3000 wpm** on a logarithmic speed slider, with live `−` / `+` steppers in the
+  transport. Change speed *or* chunk width mid-session — the reader keeps your place,
+  rebuilds the chunks around the word you were on and carries straight on.
 - **Five modes** — passage, timed, zen (manual pace), ramp (the speed climbs as you
   read) and your own pasted text.
 - **Comprehension checks** with a one-line explanation per answer, an answer review,
   and a drill for the questions you missed.
 - **Stats that match the premise** — performance by chunk size, effective WPM,
   speed distribution, speed-vs-comprehension scatter, a 26-week heatmap, a daily goal,
-  streaks and 14 achievements.
+  streaks and 16 achievements.
 - **12 themes** plus a custom accent, light and dark, with a pre-paint theme script so
   there is no flash on load.
 - **Local-first** — everything is stored in `localStorage`; JSON/CSV export and JSON
@@ -33,6 +36,9 @@ python3 -m http.server 4173 --bind 127.0.0.1
 # then open http://127.0.0.1:4173
 ```
 
+The live build is also on GitHub Pages:
+<https://Abhinav-Prabhakar.github.io/Chunky/>
+
 Opening `index.html` directly also works, except the service worker (which needs
 `http(s)`).
 
@@ -43,7 +49,7 @@ Opening `index.html` directly also works, except the service worker (which needs
 | `space` | start / pause (zen: next chunk) |
 | `enter` | start · next passage on the results screen |
 | `r` | restart this passage |
-| `←` `→` | speed −25 / +25 wpm |
+| `←` `→` | speed down / up (10–100 wpm, scaled to your pace) |
 | `↑` `↓` | chunk size − / + |
 | `b` | peek at the previous chunk |
 | `1`–`4` | answer a comprehension question |
