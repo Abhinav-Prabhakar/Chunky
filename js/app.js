@@ -78,6 +78,31 @@ function setMetaTheme() {
 function applyAccentVars() {
   document.documentElement.style.setProperty('--main', settings.accent);
   document.documentElement.style.setProperty('--on-main', onColor(settings.accent));
+  paintFavicon();
+}
+
+/* the tab icon is the logo, drawn from whatever the theme is right now */
+function paintFavicon() {
+  const cs = getComputedStyle(document.documentElement);
+  const dim = (cs.getPropertyValue('--dim') || '').trim() || '#646669';
+  const main = (cs.getPropertyValue('--main') || '').trim() || '#e2b714';
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'>`
+    + `<rect x='2' y='2' width='13' height='13' rx='3.5' fill='${dim}'/>`
+    + `<rect x='17' y='2' width='13' height='13' rx='3.5' fill='${dim}'/>`
+    + `<rect x='2' y='17' width='13' height='13' rx='3.5' fill='${dim}'/>`
+    + `<rect x='17' y='17' width='13' height='13' rx='3.5' fill='${main}'/></svg>`;
+  const href = 'data:image/svg+xml,' + encodeURIComponent(svg);
+  let link = document.querySelector('link[rel="icon"]');
+  const apple = document.querySelector('link[rel="apple-touch-icon"]');
+  if (!link) {
+    link = document.createElement('link');
+    link.rel = 'icon';
+    link.type = 'image/svg+xml';
+    document.head.appendChild(link);
+  }
+  link.setAttribute('type', 'image/svg+xml');
+  link.setAttribute('href', href);
+  if (apple) apple.setAttribute('href', href);
 }
 
 function applyTheme(id) {
@@ -90,6 +115,7 @@ function applyTheme(id) {
   if (id === 'custom') applyAccentVars();
   document.documentElement.style.setProperty('--read-font', settings.fontFamily);
   setMetaTheme();
+  paintFavicon();
   $$('.theme-card').forEach(c => c.classList.toggle('active', c.dataset.id === id));
 }
 
@@ -177,6 +203,7 @@ function switchView(name, opts = {}) {
   if (onPractice) navT.setAttribute('aria-current', 'page'); else navT.removeAttribute('aria-current');
   if (name === 'stats') navS.setAttribute('aria-current', 'page'); else navS.removeAttribute('aria-current');
   if (name === 'stats') renderStats();
+  if (name !== 'test') exitFocus();
   if (opts.hash !== false) setHash(name);
   if (changed) announce(name);
   window.scrollTo({ top: 0 });
@@ -240,10 +267,7 @@ function newSession(opts = {}) {
   }
 
   const words = body.trim().split(/\s+/).filter(Boolean);
-  if (!words.length) {
-    toast('that text was empty — try again');
-    return;
-  }
+  if (!words.length) return;
 
   const chunks = buildChunks(words, settings.chunkSize, settings.smartChunks);
   const startIdx = opts.resumePos ? clamp(Math.round(opts.resumePos), 0, chunks.length - 1) : 0;
@@ -628,7 +652,6 @@ function previewPrev() {
   previewIdx = target;
   renderChunk(target, { force: true });
   setOverlay('hidden');
-  toast('previous chunk — <strong>space</strong> to resume');
 }
 
 function abortSession() {
@@ -639,7 +662,6 @@ function abortSession() {
   const pos = session.mode === 'custom' ? session.idx : 0;
   if (text) saveCustom(text, pos);
   newSession({ same: true, text, resumePos: pos });
-  toast('session discarded');
 }
 
 function restartSame() {
@@ -749,7 +771,6 @@ function finishQuiz() {
   quiz = null;
   if (drill) {
     if (session) session.status = 'done';
-    toast(`drill complete — <strong>${correct} / ${total}</strong>`);
     switchView('results');
     return;
   }
@@ -814,11 +835,11 @@ function finalizeResults(comp01) {
   }
 
   const newly = checkAchievements();
-  const messages = [];
-  if (isPB) messages.push('<strong>new personal best</strong> for this setup');
-  newly.forEach(a => messages.push(`<strong>achievement</strong> — ${a.name}`));
-  messages.forEach((m, i) => setTimeout(() => { toast(m); sfx.unlock(); }, 400 + i * 900));
-  maybeCelebrateGoal(entry);
+  const earned = [];
+  if (isPB) earned.push('new personal best for this setup');
+  newly.forEach(a => earned.push(`achievement unlocked — ${a.name}`));
+  if (goalJustReached(entry)) earned.push(`daily goal reached — ${fmtInt(wordsToday())} words`);
+  session.earned = earned;
 
   paintResults({ wpm, eff, comp, focus, secs, entry, isPB });
   session.status = 'done';
@@ -841,6 +862,7 @@ function paintResults({ wpm, eff, comp, focus, secs, entry, isPB }) {
   $('#resChunk').textContent = session.chunkSize + 'w';
   $('#resFocus').textContent = focus;
   $('#resPbBadge').classList.toggle('hidden', !isPB);
+  showNote('#resAchieved', (session.earned || []).join(' · '), 'ok');
   $('#resNote').textContent = comp == null
     ? (session.mode === 'ramp'
       ? `ramp finished at ${session.peakWpm} wpm — your top speed this run. no comprehension check, so the wpm is raw.`
@@ -1149,12 +1171,10 @@ function wordsToday() {
   return runs.filter(r => dayKey(new Date(r.ts)) === k).reduce((a, r) => a + (r.words || 0), 0);
 }
 
-function maybeCelebrateGoal(entry) {
-  if (!settings.goal) return;
+function goalJustReached(entry) {
+  if (!settings.goal) return false;
   const total = wordsToday();
-  if (total >= settings.goal && total - (entry.words || 0) < settings.goal) {
-    toast(`<strong>daily goal reached</strong> — ${fmtInt(total)} words`);
-  }
+  return total >= settings.goal && total - (entry.words || 0) < settings.goal;
 }
 
 function renderGoal() {
@@ -1334,23 +1354,14 @@ function checkAchievements() {
   return newly;
 }
 
-/* ============================================================
-   TOAST
-   ============================================================ */
-let toastTimer = null;
-let toastHideTimer = null;
-function toast(html, ms = 3400) {
-  const el = $('#toast');
+/* small inline note, replaced in place — no floating messages */
+function showNote(sel, text, kind = '') {
+  const el = $(sel);
   if (!el) return;
-  clearTimeout(toastTimer);
-  clearTimeout(toastHideTimer);
-  el.innerHTML = html;
-  el.classList.remove('hidden');
-  requestAnimationFrame(() => el.classList.add('show'));
-  toastTimer = setTimeout(() => {
-    el.classList.remove('show');
-    toastHideTimer = setTimeout(() => el.classList.add('hidden'), 260);
-  }, ms);
+  el.textContent = text;
+  el.classList.toggle('hidden', !text);
+  el.classList.toggle('is-error', kind === 'error');
+  el.classList.toggle('is-ok', kind === 'ok');
 }
 
 /* ============================================================
@@ -1358,31 +1369,30 @@ function toast(html, ms = 3400) {
    ============================================================ */
 const MODALS = ['modalShortcuts', 'modalCustom', 'modalConfirm'];
 const DRAWER = 'drawerSettings';
-let lastFocus = null;
+let lastFocus = null;      // where focus goes back to when a modal closes
+let drawerReturn = null;   // same, for the settings panel
 let confirmCb = null;
 
 function drawerEl() { return $('#' + DRAWER); }
 function drawerOpen() { const d = drawerEl(); return !!d && !d.classList.contains('hidden'); }
 
 function openModalEl() {
-  if (drawerOpen()) return drawerEl();
   return MODALS.map(id => $('#' + id)).find(m => m && !m.classList.contains('hidden')) || null;
 }
 function anyModalOpen() { return !!openModalEl(); }
 
 function setBackgroundInert(on) {
-  ['main', '.topbar'].forEach(sel => {
+  ['main', '.topbar', '#' + DRAWER].forEach(sel => {
     const el = $(sel);
     if (el) el.inert = on;
   });
 }
 
-function hidePanels() {
-  MODALS.forEach(id => { const m = $('#' + id); if (m) m.classList.add('hidden'); });
-  const d = drawerEl();
-  if (d) { d.classList.add('hidden'); d.setAttribute('aria-hidden', 'true'); }
-  const s = $('#drawerScrim');
-  if (s) s.classList.add('hidden');
+function setDrawerExpanded(on) {
+  ['#btnSettings', '#btnTheme'].forEach(sel => {
+    const b = $(sel);
+    if (b) b.setAttribute('aria-expanded', on ? 'true' : 'false');
+  });
 }
 
 function focusInto(panel, selector) {
@@ -1396,25 +1406,26 @@ function openModal(id) {
   const modal = $('#' + id);
   if (!modal) return;
   if (!anyModalOpen()) lastFocus = document.activeElement;
-  hidePanels();
+  MODALS.forEach(m => { const el = $('#' + m); if (el && el !== modal) el.classList.add('hidden'); });
   modal.classList.remove('hidden');
   document.body.classList.add('modal-open');
   setBackgroundInert(true);
   focusInto(modal);
 }
 
+/* the settings panel sits beside the page instead of over it, so it never
+   blocks the reader, never traps focus and never locks the scroll. */
 function openDrawer(section) {
   const drawer = drawerEl();
   if (!drawer) return;
+  exitFocus();
+  if (anyModalOpen()) closeModals();
   const wasOpen = drawerOpen();
-  if (!wasOpen) lastFocus = document.activeElement;
-  hidePanels();
+  if (!wasOpen) drawerReturn = document.activeElement;
   drawer.classList.remove('hidden');
   drawer.setAttribute('aria-hidden', 'false');
-  const scrim = $('#drawerScrim');
-  if (scrim) scrim.classList.remove('hidden');
-  document.body.classList.add('modal-open');
-  setBackgroundInert(true);
+  document.body.classList.add('drawer-open');
+  setDrawerExpanded(true);
   renderThemeGrid();
   applySettingsToUI();
   if (section) {
@@ -1428,10 +1439,24 @@ function openDrawer(section) {
   if (!wasOpen) focusInto(drawer, '#closeSettings');
 }
 
+function closeDrawer(opts = {}) {
+  const drawer = drawerEl();
+  if (!drawer || drawer.classList.contains('hidden')) return;
+  drawer.classList.add('hidden');
+  drawer.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('drawer-open');
+  setDrawerExpanded(false);
+  if (opts.restore !== false && drawerReturn) {
+    try { drawerReturn.focus({ preventScroll: true }); } catch { /* gone */ }
+  }
+  drawerReturn = null;
+}
+
 function closeModals() {
-  hidePanels();
+  MODALS.forEach(id => { const m = $('#' + id); if (m) m.classList.add('hidden'); });
   document.body.classList.remove('modal-open');
   setBackgroundInert(false);
+  applyFocusInert();
   if (lastFocus && typeof lastFocus.focus === 'function') {
     try { lastFocus.focus({ preventScroll: true }); } catch { /* gone */ }
   }
@@ -1657,14 +1682,8 @@ function setChunkSize(size) {
   saveSettings();
   syncPills();
   if (!session || !changed) return;
-  if (session.status === 'quiz' || session.status === 'done') {
-    toast(`chunk size ${next} — applies to the next session`);
-    return;
-  }
+  if (session.status === 'quiz' || session.status === 'done') return;
   rebuildChunks();
-  if (session.status === 'running' || session.status === 'paused') {
-    toast(`chunk ${next} — applied live`);
-  }
 }
 function nudgeChunk(delta) { setChunkSize(settings.chunkSize + delta); }
 
@@ -1672,9 +1691,7 @@ function toggleSmart() {
   settings.smartChunks = !settings.smartChunks;
   saveSettings();
   applySettingsToUI();
-  const live = !!(session && (session.status === 'running' || session.status === 'paused'));
   if (session && session.status !== 'quiz' && session.status !== 'done') rebuildChunks();
-  toast(`smart chunks ${settings.smartChunks ? 'on' : 'off'}${live ? ' — applied live' : ''}`);
 }
 
 /* Rebuild the chunk list in place: same passage, same words, same clock.
@@ -1762,9 +1779,6 @@ function startCustomFromModal() {
     $('#customText').focus();
     return;
   }
-  if (words > 12000) {
-    toast('that is a lot of text — trimming to the first 12,000 words');
-  }
   const trimmed = words > 12000 ? text.split(/\s+/).slice(0, 12000).join(' ') : text;
   settings.mode = 'custom';
   saveSettings();
@@ -1815,21 +1829,18 @@ function exportData() {
     settings, runs, achievements: unlocked, best, read: readCounts, daily: dailyState,
   };
   download(`chunky-${todayKey()}.json`, JSON.stringify(payload, null, 2), 'application/json');
-  toast('exported <strong>chunky-' + todayKey() + '.json</strong>');
 }
 
 function importPayload(data) {
   const incoming = Array.isArray(data) ? data : (data.runs || data.history || []);
   if (!Array.isArray(incoming)) throw new Error('no sessions found');
   const ids = new Set(runs.map(r => r.id));
-  let added = 0;
   incoming.forEach(r => {
     if (!r || typeof r !== 'object' || typeof r.ts !== 'number' || typeof r.wpm !== 'number') return;
     const id = r.id || uid();
     if (ids.has(id)) return;
     ids.add(id);
     runs.push({ ...r, id });
-    added++;
   });
   runs.sort((a, b) => a.ts - b.ts);
   if (runs.length > 500) runs = runs.slice(-500);
@@ -1855,7 +1866,6 @@ function importPayload(data) {
     }
   }
   renderStats();
-  toast(`imported <strong>${added}</strong> session${added === 1 ? '' : 's'}`);
 }
 
 function exportCsv() {
@@ -1873,7 +1883,6 @@ function exportCsv() {
     r.daily ? 1 : 0,
   ].join(','));
   download(`chunky-${todayKey()}.csv`, [head, ...rows].join('\n'), 'text/csv');
-  toast('exported <strong>csv</strong>');
 }
 
 function clearData() {
@@ -1886,7 +1895,6 @@ function clearData() {
     saveJSON(LS.daily, dailyState);
     renderStats();
     refreshDailyButton();
-    toast('history cleared');
   });
 }
 
@@ -1924,12 +1932,21 @@ const SHORTCUT_GROUPS = [
     ],
   },
   {
+    title: 'focus',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5.6A1.6 1.6 0 0 1 5.6 4H8M16 4h2.4A1.6 1.6 0 0 1 20 5.6V8M20 16v2.4a1.6 1.6 0 0 1-1.6 1.6H16M8 20H5.6A1.6 1.6 0 0 1 4 18.4V16"/><path d="M9 12h6"/></svg>',
+    items: [
+      { keys: ['f'], label: 'just the words', accent: true },
+      { keys: ['g'], label: 'words, progress and passage' },
+      { keys: ['esc'], label: 'back to the page' },
+    ],
+  },
+  {
     title: 'app',
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 7h5M13 7h7M4 12h10M18 12h2M4 17h3M11 17h9"/><circle cx="11" cy="7" r="1.9"/><circle cx="16" cy="12" r="1.9"/><circle cx="9" cy="17" r="1.9"/></svg>',
     items: [
       { keys: ['s'], label: 'settings' },
       { keys: ['t'], label: 'appearance' },
-      { keys: ['f'], label: 'fullscreen' },
+      { keys: ['shift', 'f'], label: 'fullscreen' },
       { keys: ['?'], label: 'this sheet' },
     ],
   },
@@ -1959,14 +1976,13 @@ function attachEvents() {
     if (session && session.status === 'running') pauseReading();
     switchView('stats');
   });
-  $('#btnSettings').addEventListener('click', () => openDrawer());
+  $('#btnSettings').addEventListener('click', () => { if (drawerOpen()) closeDrawer(); else openDrawer(); });
   $('#btnTheme').addEventListener('click', () => openDrawer('secAppearance'));
   $('#btnShortcuts').addEventListener('click', () => openModal('modalShortcuts'));
 
   // panel chrome
-  $('#closeSettings').addEventListener('click', closeModals);
-  $('#btnCloseDrawer').addEventListener('click', closeModals);
-  $('#drawerScrim').addEventListener('click', closeModals);
+  $('#closeSettings').addEventListener('click', () => closeDrawer());
+  $('#btnCloseDrawer').addEventListener('click', () => closeDrawer());
   $('#closeShortcuts').addEventListener('click', closeModals);
   $('#closeCustom').addEventListener('click', closeModals);
   MODALS.forEach(m => {
@@ -2015,6 +2031,8 @@ function attachEvents() {
   });
   $('#btnCustomText').addEventListener('click', openCustom);
   $('#btnDaily').addEventListener('click', startDaily);
+  $('#btnFocus').addEventListener('click', () => setFocusMode(focusMode === 'deep' ? 'guide' : focusMode === 'guide' ? null : 'deep'));
+  $('#focusExit').addEventListener('click', exitFocus);
 
   // pointer: tap to play, swipe for speed / chunk size
   const stage = $('#stage');
@@ -2065,8 +2083,9 @@ function attachEvents() {
     reader.onload = () => {
       try {
         importPayload(JSON.parse(String(reader.result)));
+        showNote('#statsNote', '');
       } catch {
-        toast('that file could not be read as chunky data');
+        showNote('#statsNote', 'that file could not be read as chunky data — pick a chunky json export', 'error');
       }
       e.target.value = '';
     };
@@ -2088,48 +2107,15 @@ function attachEvents() {
       runs = runs.filter(r => r.id !== id);
       persistRuns();
       renderStats();
-      toast('session deleted');
     });
   });
-  $('#heatmap').addEventListener('click', e => {
-    const cell = e.target.closest('[data-day]');
-    if (!cell) return;
-    const k = cell.dataset.day;
-    const n = runs.filter(r => dayKey(new Date(r.ts)) === k).length;
-    toast(`${new Date(k + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} — <strong>${n}</strong> session${n === 1 ? '' : 's'}`);
-  });
   // settings drawer nav
-  let navLockUntil = 0;
   $('#drawerNav').addEventListener('click', e => {
     const chip = e.target.closest('[data-goto]');
     if (!chip) return;
-    navLockUntil = performance.now() + 900;
     scrollDrawerTo(chip.dataset.goto);
     setActiveChip(chip.dataset.goto);
   });
-  const drawerBody = $('#drawerBody');
-  if (drawerBody) {
-    const sections = $$('#drawerBody .set-section');
-    let navRaf = 0;
-    drawerBody.addEventListener('scroll', () => {
-      if (navRaf) return;
-      navRaf = requestAnimationFrame(() => {
-        navRaf = 0;
-        if (!sections.length) return;
-        if (performance.now() < navLockUntil) return;
-        const atBottom = drawerBody.scrollTop + drawerBody.clientHeight >= drawerBody.scrollHeight - 8;
-        let current = sections[0].id;
-        if (atBottom) {
-          current = sections[sections.length - 1].id;
-        } else {
-          sections.forEach(sec => {
-            if (sec.offsetTop <= drawerBody.scrollTop + 120) current = sec.id;
-          });
-        }
-        setActiveChip(current);
-      });
-    });
-  }
 
   // settings controls
   $('#setFontSize').addEventListener('input', e => {
@@ -2198,7 +2184,6 @@ function attachEvents() {
     applySettingsToUI();
     renderThemeGrid();
     renderGoal();
-    toast('settings restored to defaults');
   });
 
   // appearance
@@ -2241,7 +2226,6 @@ function attachEvents() {
       customSaved = { text: customSaved.text, pos: 0 };
       saveJSON(LS.custom, customSaved);
       $('#customSaved').classList.add('hidden');
-      toast('starting from the top');
     }
   });
 
@@ -2301,6 +2285,16 @@ function goPractice() {
   switchView('test');
 }
 
+let copyTimer = null;
+function flashCopy(text) {
+  const btn = $('#btnCopy');
+  if (!btn) return;
+  if (!btn.dataset.label) btn.dataset.label = btn.textContent.trim();
+  btn.textContent = text;
+  clearTimeout(copyTimer);
+  copyTimer = setTimeout(() => { btn.textContent = btn.dataset.label; }, 1800);
+}
+
 async function copySummary() {
   if (!session) return;
   const bits = [`${session.finalWpm} wpm`];
@@ -2313,14 +2307,14 @@ async function copySummary() {
   const text = `${bits.join(' · ')} — chunky`;
   try {
     await navigator.clipboard.writeText(text);
-    toast('summary copied to clipboard');
+    flashCopy('copied');
   } catch {
     const ta = document.createElement('textarea');
     ta.value = text;
     document.body.appendChild(ta);
     ta.select();
-    try { document.execCommand('copy'); toast('summary copied to clipboard'); }
-    catch { toast('could not copy — clipboard is blocked'); }
+    try { document.execCommand('copy'); flashCopy('copied'); }
+    catch { flashCopy('copy blocked'); }
     ta.remove();
   }
 }
@@ -2330,6 +2324,41 @@ function drillMissed() {
   if (!missed.length) return;
   closeModals();
   startQuiz(missed, { drill: true });
+}
+
+/* ---------- focus mode ---------- */
+/* two levels: words only, or words plus the progress bar and the passage
+   sliding underneath. everything else fades but keeps its space, so the
+   line you are reading never moves. */
+const FOCUS_CHROME = ['.topbar', '.setup', '.transport', '.hud', '.stage-foot', '.progress-track'];
+let focusMode = null; // null | 'deep' | 'guide'
+
+function applyFocusInert() {
+  const hidden = focusMode === 'deep' ? FOCUS_CHROME
+    : focusMode === 'guide' ? FOCUS_CHROME.filter(sel => sel !== '.progress-track')
+      : [];
+  FOCUS_CHROME.forEach(sel => {
+    const el = $(sel);
+    if (el) el.inert = hidden.includes(sel);
+  });
+}
+
+function setFocusMode(mode) {
+  const next = mode === focusMode ? null : mode;
+  if (next) closeDrawer({ restore: false });
+  focusMode = next;
+  document.body.classList.toggle('focus-deep', next === 'deep');
+  document.body.classList.toggle('focus-guide', next === 'guide');
+  const pill = $('#focusExit');
+  if (pill) {
+    pill.classList.toggle('hidden', !next);
+    pill.setAttribute('aria-hidden', next ? 'false' : 'true');
+  }
+  applyFocusInert();
+}
+
+function exitFocus() {
+  if (focusMode) setFocusMode(focusMode);
 }
 
 /* ---------- keyboard ---------- */
@@ -2352,12 +2381,17 @@ function onKeyDown(e) {
     return;
   }
 
+  /* leave browser chords alone — cmd/ctrl/alt+r is reload, not restart. */
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+
   const testActive = $('#view-test').classList.contains('active');
   const quizActive = $('#view-quiz').classList.contains('active');
   const resultsActive = $('#view-results').classList.contains('active');
 
   if (e.key === 'Escape') {
-    if (quiz) { quiz = null; toast('quiz skipped — this session was not saved'); restartSame(); return; }
+    if (focusMode) { exitFocus(); return; }
+    if (drawerOpen()) { closeDrawer(); return; }
+    if (quiz) { quiz = null; restartSame(); return; }
     if (session && (session.status === 'running' || session.status === 'paused')) { abortSession(); return; }
     if (resultsActive) { restartSame(); return; }
     if (!testActive) { switchView('test'); return; }
@@ -2388,7 +2422,7 @@ function onKeyDown(e) {
       else if (testActive && session && session.status === 'idle') { e.preventDefault(); startReading(); }
       return;
     case 'r':
-      if (testActive) { e.preventDefault(); restartSame(); toast('restarted'); }
+      if (testActive) { e.preventDefault(); restartSame(); }
       return;
     case 'b':
       if (testActive) { e.preventDefault(); previewPrev(); }
@@ -2405,12 +2439,18 @@ function onKeyDown(e) {
     case 'ArrowDown': if (testActive) { e.preventDefault(); nudgeChunk(1); } return;
     case 'v':
       settings.showPassage = !settings.showPassage; saveSettings(); applySettingsToUI();
-      toast(`passage ${settings.showPassage ? 'shown' : 'hidden'}`);
       return;
     case 'm':
       toggleSmart();
       return;
     case 'f':
+      if (testActive) { e.preventDefault(); setFocusMode('deep'); }
+      return;
+    case 'g':
+      if (testActive) { e.preventDefault(); setFocusMode('guide'); }
+      return;
+    case 'F':
+      /* shift+f keeps the old fullscreen behaviour */
       if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
       else document.documentElement.requestFullscreen().catch(() => {});
       return;
@@ -2468,7 +2508,7 @@ function init() {
   newSession({});
   if (bootHash === 'stats') switchView('stats', { hash: false });
   booting = false;
-  if (!storageOk) toast('storage is unavailable — progress will not be saved');
+  if (!storageOk) showNote('#storageNote', 'storage is unavailable — this session will not be saved', 'error');
   registerSW();
 }
 

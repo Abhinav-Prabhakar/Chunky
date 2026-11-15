@@ -28,7 +28,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&family=Literata:opsz,wght@7..72,400;7..72,500&family=Inter:wght@400;500;600&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/style.css?v=7" />
 </head>
 <body>
 
@@ -66,13 +66,13 @@
         <path d="M9 15.4h6" stroke-width="2.8"/>
       </svg>
     </button>
-    <button class="icon-btn" id="btnTheme" type="button" title="appearance" aria-label="appearance and theme">
+    <button class="icon-btn" id="btnTheme" type="button" title="appearance" aria-label="appearance and theme" aria-controls="drawerSettings" aria-expanded="false">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="12" cy="12" r="8.4"/>
         <path d="M12 3.6a8.4 8.4 0 0 1 0 16.8z" fill="currentColor" stroke="none"/>
       </svg>
     </button>
-    <button class="icon-btn" id="btnSettings" type="button" title="settings" aria-label="settings">
+    <button class="icon-btn" id="btnSettings" type="button" title="settings" aria-label="settings" aria-controls="drawerSettings" aria-expanded="false">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M4 6.5h5.1M13.3 6.5H20M4 12h9.1M17.3 12H20M4 17.5h5.3M13.5 17.5H20"/>
         <circle cx="11.2" cy="6.5" r="2.1" fill="currentColor" stroke="none"/>
@@ -165,6 +165,7 @@
         <button class="text-link" id="btnCustomText" type="button">paste text</button>
         <button class="text-link" id="btnSkipPassage" type="button">new passage</button>
         <button class="text-link" id="btnDaily" type="button">daily</button>
+        <button class="text-link" id="btnFocus" type="button" title="focus mode — f for words only, g for words and progress">focus</button>
       </div>
     </div>
   </section>
@@ -211,6 +212,7 @@
 
       <p class="res-note" id="resNote"></p>
       <p class="res-compare" id="resCompare"></p>
+      <p class="res-achieved hidden" id="resAchieved" role="status"></p>
 
       <div class="chart-wrap">
         <canvas class="res-chart" id="resChart" role="img" aria-label="reading speed across the session"></canvas>
@@ -246,6 +248,7 @@
           <button class="btn ghost small danger" id="btnClearHistory" type="button">clear</button>
         </div>
       </div>
+      <p class="view-note hidden" id="statsNote" role="status"></p>
 
       <div class="filters" id="statsFilters">
         <div class="filter-group" role="group" aria-label="filter by mode">
@@ -355,8 +358,7 @@
 </main>
 
 <!-- ================= SETTINGS DRAWER ================= -->
-<div class="scrim hidden" id="drawerScrim" aria-hidden="true"></div>
-<aside class="drawer hidden" id="drawerSettings" role="dialog" aria-modal="true" aria-labelledby="settingsTitle" aria-hidden="true">
+<aside class="drawer hidden" id="drawerSettings" aria-labelledby="settingsTitle" aria-hidden="true">
   <div class="drawer-head">
     <div class="drawer-heading">
       <span class="drawer-kicker">settings</span>
@@ -538,6 +540,7 @@
         <div class="data-cell"><span class="data-num" id="setStatDays">0</span><span class="data-label">days read</span></div>
         <div class="data-cell"><span class="data-num" id="setStatSize">0 B</span><span class="data-label">on device</span></div>
       </div>
+      <p class="view-note hidden" id="storageNote" role="status"></p>
 
       <div class="set-actions">
         <button class="btn ghost small" id="btnExportDrawer" type="button">export json</button>
@@ -598,15 +601,15 @@
   </div>
 </div>
 
-<div class="toast hidden" id="toast" role="status" aria-live="polite"></div>
+<button class="focus-exit hidden" id="focusExit" type="button" aria-label="exit focus mode"><kbd>esc</kbd> exit focus</button>
 <div class="sr-only" id="viewAnnounce" role="status" aria-live="polite"></div>
 
 <noscript>
   <div class="noscript">chunky needs JavaScript to run. enable it and reload.</div>
 </noscript>
 
-<script src="js/passages.js"></script>
-<script src="js/engine.js"></script>
-<script src="js/app.js"></script>
+<script src="js/passages.js?v=7"></script>
+<script src="js/engine.js?v=7"></script>
+<script src="js/app.js?v=7"></script>
 </body>
 </html>

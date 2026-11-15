@@ -1,14 +1,14 @@
 /* chunky service worker — network first, cache fallback.
    Keeps the app installable and usable offline without ever
    pinning a stale build while you are developing. */
-const CACHE = 'chunky-v4';
+const CACHE = 'chunky-v7';
 const ASSETS = [
   './',
   'index.html',
-  'css/style.css',
-  'js/passages.js',
-  'js/engine.js',
-  'js/app.js',
+  'css/style.css?v=7',
+  'js/passages.js?v=7',
+  'js/engine.js?v=7',
+  'js/app.js?v=7',
   'manifest.json',
   'assets/icon.svg',
 ];
@@ -36,7 +36,7 @@ self.addEventListener('fetch', event => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
   event.respondWith(
-    fetch(req)
+    fetch(req, { cache: 'no-store' })
       .then(res => {
         if (res && res.ok) {
           const copy = res.clone();
