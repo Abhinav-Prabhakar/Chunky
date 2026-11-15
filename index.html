@@ -59,13 +59,26 @@
 
   <div class="topbar-right">
     <button class="icon-btn" id="btnShortcuts" type="button" title="keyboard shortcuts" aria-label="keyboard shortcuts">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M6 14h.01M18 14h.01M9 14h6"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="2.5" y="5" width="19" height="14" rx="3.6"/>
+        <path d="M7.4 9.4h.01M12 9.4h.01M16.6 9.4h.01"/>
+        <path d="M7.4 12.4h.01M12 12.4h.01M16.6 12.4h.01"/>
+        <path d="M9 15.4h6" stroke-width="2.8"/>
+      </svg>
     </button>
-    <button class="icon-btn" id="btnTheme" type="button" title="theme" aria-label="choose theme">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a10 10 0 0 0 0 20 1.5 1.5 0 0 0 0-3 2 2 0 0 1 2-2h2.5A3.5 3.5 0 0 0 20 13.5C19.7 7.4 16.7 2 12 2z"/><circle cx="7.5" cy="10.5" r=".8" fill="currentColor"/><circle cx="11" cy="6.5" r=".8" fill="currentColor"/><circle cx="15.5" cy="8" r=".8" fill="currentColor"/></svg>
+    <button class="icon-btn" id="btnTheme" type="button" title="appearance" aria-label="appearance and theme">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="8.4"/>
+        <path d="M12 3.6a8.4 8.4 0 0 1 0 16.8z" fill="currentColor" stroke="none"/>
+      </svg>
     </button>
     <button class="icon-btn" id="btnSettings" type="button" title="settings" aria-label="settings">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M4 6.5h5.1M13.3 6.5H20M4 12h9.1M17.3 12H20M4 17.5h5.3M13.5 17.5H20"/>
+        <circle cx="11.2" cy="6.5" r="2.1" fill="currentColor" stroke="none"/>
+        <circle cx="15.2" cy="12" r="2.1" fill="currentColor" stroke="none"/>
+        <circle cx="11.4" cy="17.5" r="2.1" fill="currentColor" stroke="none"/>
+      </svg>
     </button>
   </div>
 </header>
@@ -341,108 +354,216 @@
 
 </main>
 
-<footer class="footer">
-  <div class="footer-left" id="footerKeys"></div>
-  <div class="footer-right"><a class="footer-link" href="https://github.com/Abhinav-Prabhakar/Chunky" target="_blank" rel="noopener">github</a> · read in chunks, not letters</div>
-</footer>
-
-<!-- ================= SETTINGS MODAL ================= -->
-<div class="overlay hidden" id="modalSettings" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
-  <div class="modal">
-    <div class="modal-head"><h2 class="modal-title" id="settingsTitle">settings</h2><button class="icon-btn" id="closeSettings" type="button" aria-label="close settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
-
-    <div class="modal-section">
-      <div class="modal-section-title">display</div>
-      <label class="setting-row" for="setFontSize">
-        <span class="setting-text"><span class="setting-name">reading text size</span><span class="setting-desc">size of the pivot display, scaled down automatically for long chunks</span></span>
-        <span class="setting-control"><input type="range" id="setFontSize" min="36" max="128" step="2" value="64" /><span class="range-val" id="setFontSizeVal">64px</span></span>
-      </label>
-      <label class="setting-row" for="setFontFamily">
-        <span class="setting-text"><span class="setting-name">reading font</span><span class="setting-desc">typeface for the pivot line</span></span>
-        <select class="select" id="setFontFamily">
-          <option value="'Roboto Mono', monospace">roboto mono</option>
-          <option value="'Literata', serif">literata (serif)</option>
-          <option value="'Inter', sans-serif">inter (sans)</option>
-          <option value="'Atkinson Hyperlegible', sans-serif">atkinson hyperlegible</option>
-          <option value="Georgia, 'Times New Roman', serif">georgia</option>
-        </select>
-      </label>
-      <label class="setting-row toggle-row">
-        <span class="setting-text"><span class="setting-name">highlight pivot letter</span><span class="setting-desc">accent color on the optimal recognition point</span></span>
-        <span class="switch"><input type="checkbox" id="setPivot" checked /><span class="slider"></span></span>
-      </label>
-      <label class="setting-row toggle-row">
-        <span class="setting-text"><span class="setting-name">show passage below</span><span class="setting-desc">dim-highlighted text under the stage</span></span>
-        <span class="switch"><input type="checkbox" id="setShowPassage" checked /><span class="slider"></span></span>
-      </label>
+<!-- ================= SETTINGS DRAWER ================= -->
+<div class="scrim hidden" id="drawerScrim" aria-hidden="true"></div>
+<aside class="drawer hidden" id="drawerSettings" role="dialog" aria-modal="true" aria-labelledby="settingsTitle" aria-hidden="true">
+  <div class="drawer-head">
+    <div class="drawer-heading">
+      <span class="drawer-kicker">settings</span>
+      <h2 class="drawer-title" id="settingsTitle">the reading room</h2>
     </div>
-
-    <div class="modal-section">
-      <div class="modal-section-title">pacing</div>
-      <label class="setting-row" for="setPunctStrength">
-        <span class="setting-text"><span class="setting-name">punctuation pauses</span><span class="setting-desc">longer dwell at periods, commas and dashes</span></span>
-        <select class="select" id="setPunctStrength">
-          <option value="gentle">gentle</option>
-          <option value="normal">normal</option>
-          <option value="aggressive">aggressive</option>
-        </select>
-      </label>
-      <label class="setting-row toggle-row">
-        <span class="setting-text"><span class="setting-name">adaptive ramp</span><span class="setting-desc">start ~35% slower, ease into full speed</span></span>
-        <span class="switch"><input type="checkbox" id="setRamp" checked /><span class="slider"></span></span>
-      </label>
-      <label class="setting-row toggle-row">
-        <span class="setting-text"><span class="setting-name">smart chunks</span><span class="setting-desc">avoid ending a chunk on "the", "of", "and" — keeps phrases intact</span></span>
-        <span class="switch"><input type="checkbox" id="setSmart" checked /><span class="slider"></span></span>
-      </label>
-    </div>
-
-    <div class="modal-section">
-      <div class="modal-section-title">practice</div>
-      <label class="setting-row" for="setGoal">
-        <span class="setting-text"><span class="setting-name">daily goal</span><span class="setting-desc">words per day · set to 0 to turn the goal off</span></span>
-        <span class="setting-control"><input class="num-input" type="number" id="setGoal" min="0" max="5000" step="50" value="500" /><span class="range-val">words</span></span>
-      </label>
-    </div>
-
-    <div class="modal-section">
-      <div class="modal-section-title">audio</div>
-      <label class="setting-row toggle-row">
-        <span class="setting-text"><span class="setting-name">sound effects</span><span class="setting-desc">subtle ticks per chunk, chime on completion</span></span>
-        <span class="switch"><input type="checkbox" id="setSound" /><span class="slider"></span></span>
-      </label>
-    </div>
-
-    <div class="modal-section">
-      <div class="modal-section-title">data</div>
-      <p class="setting-desc" id="storageNote">progress is saved in this browser only. export from the stats page to keep a backup.</p>
-    </div>
-
-    <div class="modal-foot">
-      <button class="btn ghost small" id="btnResetSettings" type="button">reset to defaults</button>
-    </div>
+    <button class="icon-btn" id="closeSettings" type="button" aria-label="close settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
   </div>
-</div>
 
-<!-- ================= THEME MODAL ================= -->
-<div class="overlay hidden" id="modalTheme" role="dialog" aria-modal="true" aria-labelledby="themeTitle">
-  <div class="modal">
-    <div class="modal-head"><h2 class="modal-title" id="themeTitle">theme</h2><button class="icon-btn" id="closeTheme" type="button" aria-label="close themes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
-    <div class="theme-grid" id="themeGrid"></div>
-    <div class="accent-row">
-      <span class="accent-label">custom accent</span>
-      <input type="color" id="setAccent" value="#e2b714" aria-label="custom accent color" />
-      <span class="accent-val" id="accentVal">#e2b714</span>
-      <button class="btn ghost small" id="btnUseCustom" type="button">use custom</button>
-    </div>
+  <nav class="drawer-nav" id="drawerNav" aria-label="settings sections">
+    <button class="nav-chip active" data-goto="secReading" type="button">reading</button>
+    <button class="nav-chip" data-goto="secAppearance" type="button">appearance</button>
+    <button class="nav-chip" data-goto="secPacing" type="button">pacing</button>
+    <button class="nav-chip" data-goto="secPractice" type="button">practice</button>
+    <button class="nav-chip" data-goto="secData" type="button">data</button>
+  </nav>
+
+  <div class="drawer-body" id="drawerBody">
+
+    <section class="set-section" id="secReading">
+      <header class="set-head">
+        <span class="set-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5c-1.8-1.4-4.2-2-7-2v13c2.8 0 5.2.6 7 2 1.8-1.4 4.2-2 7-2v-13c-2.8 0-5.2.6-7 2z"/><path d="M12 6.5v13"/></svg></span>
+        <h3>reading</h3>
+      </header>
+
+      <div class="read-preview" aria-hidden="true">
+        <span class="rp-guide rp-top"></span>
+        <span class="rp-axis"></span>
+        <span class="rp-guide rp-bottom"></span>
+        <span class="rp-line" id="setPreviewLine"><span class="rp-pre">the qui</span><span class="rp-pivot">c</span><span class="rp-post">k</span></span>
+        <span class="rp-passage" id="setPreviewPassage"><i class="done">the</i><i class="cur">quick</i><i>brown</i><i>fox</i><i>jumps</i><i>over</i></span>
+      </div>
+
+      <div class="set-label-row">
+        <span class="set-name">text size</span>
+        <span class="set-value"><output id="setFontSizeVal">64</output><span class="set-unit">px</span></span>
+      </div>
+      <div class="range-row">
+        <span class="range-end" aria-hidden="true">A</span>
+        <input class="range" type="range" id="setFontSize" min="36" max="128" step="2" value="64" aria-label="reading text size" />
+        <span class="range-end range-end-lg" aria-hidden="true">A</span>
+      </div>
+
+      <div class="set-block">
+        <div class="set-label-row"><span class="set-name">typeface</span></div>
+        <div class="font-grid" id="fontCards" role="group" aria-label="reading typeface">
+          <button class="font-card" type="button" data-font="'Roboto Mono', monospace" style="font-family:'Roboto Mono',monospace" aria-pressed="true"><span class="font-sample">chunk</span><span class="font-name">mono</span></button>
+          <button class="font-card" type="button" data-font="'Literata', serif" style="font-family:'Literata',serif" aria-pressed="false"><span class="font-sample">chunk</span><span class="font-name">literata</span></button>
+          <button class="font-card" type="button" data-font="'Inter', sans-serif" style="font-family:'Inter',sans-serif" aria-pressed="false"><span class="font-sample">chunk</span><span class="font-name">inter</span></button>
+          <button class="font-card" type="button" data-font="'Atkinson Hyperlegible', sans-serif" style="font-family:'Atkinson Hyperlegible',sans-serif" aria-pressed="false"><span class="font-sample">chunk</span><span class="font-name">atkinson</span></button>
+          <button class="font-card" type="button" data-font="Georgia, 'Times New Roman', serif" style="font-family:Georgia,'Times New Roman',serif" aria-pressed="false"><span class="font-sample">chunk</span><span class="font-name">georgia</span></button>
+        </div>
+      </div>
+
+      <div class="set-toggle">
+        <div class="set-text">
+          <span class="set-name">pivot letter</span>
+          <span class="set-hint" aria-hidden="true">qui<b>c</b>k</span>
+        </div>
+        <label class="switch"><input type="checkbox" id="setPivot" checked /><span class="slider"></span><span class="sr-only">highlight the pivot letter</span></label>
+      </div>
+
+      <div class="set-toggle">
+        <div class="set-text">
+          <span class="set-name">passage under stage</span>
+          <span class="hint-layers" aria-hidden="true">
+            <span class="hl-top"><i></i></span>
+            <span class="hl-bottom"><i></i><i></i><i></i></span>
+          </span>
+        </div>
+        <label class="switch"><input type="checkbox" id="setShowPassage" checked /><span class="slider"></span><span class="sr-only">show passage below the stage</span></label>
+      </div>
+    </section>
+
+    <section class="set-section" id="secAppearance">
+      <header class="set-head">
+        <span class="set-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><circle cx="12" cy="12" r="8.4"/><path d="M12 3.6a8.4 8.4 0 0 1 0 16.8z" fill="currentColor" stroke="none"/></svg></span>
+        <h3>appearance</h3>
+      </header>
+      <div class="theme-grid" id="themeGrid"></div>
+
+      <div class="accent-block">
+        <div class="set-label-row"><span class="set-name">accent</span><span class="accent-val" id="accentVal">#e2b714</span></div>
+        <div class="accent-row" id="accentPresets" role="group" aria-label="accent presets">
+          <button class="accent-swatch" type="button" data-accent="#e2b714" style="--sw:#e2b714" aria-label="amber accent" aria-pressed="true"></button>
+          <button class="accent-swatch" type="button" data-accent="#88c0d0" style="--sw:#88c0d0" aria-label="glacier accent" aria-pressed="false"></button>
+          <button class="accent-swatch" type="button" data-accent="#cba6f7" style="--sw:#cba6f7" aria-label="lilac accent" aria-pressed="false"></button>
+          <button class="accent-swatch" type="button" data-accent="#a6e22e" style="--sw:#a6e22e" aria-label="lime accent" aria-pressed="false"></button>
+          <button class="accent-swatch" type="button" data-accent="#38bdf8" style="--sw:#38bdf8" aria-label="sky accent" aria-pressed="false"></button>
+          <button class="accent-swatch" type="button" data-accent="#eb6f92" style="--sw:#eb6f92" aria-label="rose accent" aria-pressed="false"></button>
+          <button class="accent-swatch" type="button" data-accent="#7ec8a3" style="--sw:#7ec8a3" aria-label="mint accent" aria-pressed="false"></button>
+          <button class="accent-swatch" type="button" data-accent="#ff7a5c" style="--sw:#ff7a5c" aria-label="coral accent" aria-pressed="false"></button>
+          <label class="accent-pick" title="pick any color">
+            <input type="color" id="setAccent" value="#e2b714" aria-label="custom accent color" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 1 1 9-9c0 2-1.5 3-3 3h-2a2 2 0 0 0-1 3.7c.4.7 0 2.3-3 2.3z"/><circle cx="8" cy="11" r=".9" fill="currentColor"/><circle cx="11" cy="7.5" r=".9" fill="currentColor"/><circle cx="15.5" cy="8.5" r=".9" fill="currentColor"/></svg>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <section class="set-section" id="secPacing">
+      <header class="set-head">
+        <span class="set-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h3.5l2.6-6.5 4.2 13L16 12h5"/></svg></span>
+        <h3>pacing</h3>
+      </header>
+
+      <div class="set-block">
+        <div class="set-label-row"><span class="set-name">punctuation pauses</span></div>
+        <div class="seg" id="punctSeg" role="group" aria-label="punctuation pause strength">
+          <button class="seg-btn" type="button" data-punct="gentle" aria-pressed="false"><span class="seg-meter" aria-hidden="true"><i></i><i></i><i></i></span><span>gentle</span></button>
+          <button class="seg-btn active" type="button" data-punct="normal" aria-pressed="true"><span class="seg-meter" aria-hidden="true"><i></i><i></i><i></i></span><span>normal</span></button>
+          <button class="seg-btn" type="button" data-punct="aggressive" aria-pressed="false"><span class="seg-meter" aria-hidden="true"><i></i><i></i><i></i></span><span>heavy</span></button>
+        </div>
+      </div>
+
+      <div class="set-toggle" id="rampRow">
+        <div class="set-text">
+          <span class="set-name">adaptive ramp</span>
+          <span class="spark" aria-hidden="true"><svg viewBox="0 0 64 20" fill="none"><path d="M2 17C17 17 28 12 62 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="2" cy="17" r="2" fill="currentColor"/></svg></span>
+        </div>
+        <label class="switch"><input type="checkbox" id="setRamp" checked /><span class="slider"></span><span class="sr-only">ease into full speed</span></label>
+      </div>
+
+      <div class="set-toggle" id="smartRow">
+        <div class="set-text">
+          <span class="set-name">smart chunks</span>
+          <span class="chunk-demo" aria-hidden="true">
+            <span class="cd bad"><i>the</i><span class="cut">|</span><i>of</i><span class="cut">|</span><i>and</i></span>
+            <span class="cd good"><i>of the</i><i>and</i></span>
+          </span>
+        </div>
+        <label class="switch"><input type="checkbox" id="setSmart" checked /><span class="slider"></span><span class="sr-only">keep phrases intact</span></label>
+      </div>
+    </section>
+
+    <section class="set-section" id="secPractice">
+      <header class="set-head">
+        <span class="set-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.4"/><circle cx="12" cy="12" r="4.4"/><circle cx="12" cy="12" r=".9" fill="currentColor"/></svg></span>
+        <h3>practice</h3>
+      </header>
+
+      <div class="set-label-row">
+        <span class="set-name">daily goal</span>
+        <span class="set-value"><output id="setGoalVal">500</output><span class="set-unit">words</span></span>
+      </div>
+      <div class="range-row">
+        <input class="range" type="range" id="setGoal" min="0" max="5000" step="50" value="500" aria-label="daily word goal" />
+      </div>
+      <div class="goal-presets" id="goalPresets" role="group" aria-label="goal presets">
+        <button class="chip-btn" type="button" data-goal="0">off</button>
+        <button class="chip-btn" type="button" data-goal="250">250</button>
+        <button class="chip-btn" type="button" data-goal="500">500</button>
+        <button class="chip-btn" type="button" data-goal="1000">1,000</button>
+        <button class="chip-btn" type="button" data-goal="2000">2,000</button>
+      </div>
+      <div class="goal-mini">
+        <div class="goal-mini-track" aria-hidden="true"><i id="setGoalFill"></i></div>
+        <span id="setGoalToday">0 words today</span>
+      </div>
+
+      <div class="set-toggle sound-row" id="soundRow">
+        <div class="set-text">
+          <span class="set-name">sound</span>
+          <span class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+        </div>
+        <label class="switch"><input type="checkbox" id="setSound" /><span class="slider"></span><span class="sr-only">sound effects</span></label>
+      </div>
+    </section>
+
+    <section class="set-section" id="secData">
+      <header class="set-head">
+        <span class="set-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5.5" rx="7.5" ry="2.8"/><path d="M4.5 5.5v6c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8v-6"/><path d="M4.5 11.5v6c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8v-6"/></svg></span>
+        <h3>data</h3>
+      </header>
+
+      <div class="data-grid">
+        <div class="data-cell"><span class="data-num" id="setStatSessions">0</span><span class="data-label">sessions</span></div>
+        <div class="data-cell"><span class="data-num" id="setStatDays">0</span><span class="data-label">days read</span></div>
+        <div class="data-cell"><span class="data-num" id="setStatSize">0 B</span><span class="data-label">on device</span></div>
+      </div>
+
+      <div class="set-actions">
+        <button class="btn ghost small" id="btnExportDrawer" type="button">export json</button>
+        <button class="btn ghost small danger" id="btnResetSettings" type="button">reset settings</button>
+      </div>
+    </section>
+
   </div>
-</div>
+
+  <div class="drawer-foot">
+    <span class="saved-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>saved</span>
+    <button class="btn primary small" id="btnCloseDrawer" type="button">done</button>
+  </div>
+</aside>
 
 <!-- ================= SHORTCUTS MODAL ================= -->
 <div class="overlay hidden" id="modalShortcuts" role="dialog" aria-modal="true" aria-labelledby="shortcutsTitle">
-  <div class="modal">
-    <div class="modal-head"><h2 class="modal-title" id="shortcutsTitle">keyboard shortcuts</h2><button class="icon-btn" id="closeShortcuts" type="button" aria-label="close shortcuts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
-    <div class="shortcut-list" id="shortcutList"></div>
+  <div class="modal shortcuts-modal">
+    <div class="modal-head shortcuts-head">
+      <div class="modal-heading">
+        <span class="modal-kicker">cheat sheet</span>
+        <h2 class="modal-title" id="shortcutsTitle">every key you need</h2>
+      </div>
+      <button class="icon-btn" id="closeShortcuts" type="button" aria-label="close shortcuts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="shortcut-deck" id="shortcutList"></div>
   </div>
 </div>
 

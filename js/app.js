@@ -94,34 +94,48 @@ function applyTheme(id) {
 }
 
 function renderThemeGrid() {
-  const cards = THEMES.map(t => `
-    <button class="theme-card${t.id === settings.theme ? ' active' : ''}" data-id="${t.id}" style="background:${t.bg}" aria-label="theme ${t.name}" aria-pressed="${t.id === settings.theme}">
-      <div class="theme-card-name" style="color:${t.text}">${t.name}</div>
-      <div class="theme-dots">
-        <span class="theme-dot" style="background:${t.bg}"></span>
-        <span class="theme-dot" style="background:${t.main}"></span>
-        <span class="theme-dot" style="background:${t.text}"></span>
-      </div>
-    </button>`).join('');
+  const cards = THEMES.map(t => {
+    const on = t.id === settings.theme;
+    return `
+    <button class="theme-card${on ? ' active' : ''}" data-id="${t.id}" style="--t-bg:${t.bg};--t-main:${t.main};--t-text:${t.text}" aria-label="theme ${t.name}" aria-pressed="${on}">
+      <span class="theme-stage"><span class="theme-word"><span>chu</span><span class="tw-pivot">n</span><span>k</span></span></span>
+      <span class="theme-meta">
+        <span class="theme-card-name">${t.name}</span>
+        <span class="theme-dots"><i style="background:${t.bg}"></i><i style="background:${t.main}"></i><i style="background:${t.text}"></i></span>
+      </span>
+    </button>`;
+  }).join('');
+  const customOn = settings.theme === 'custom';
   const custom = `
-    <button class="theme-card theme-card-custom${settings.theme === 'custom' ? ' active' : ''}" data-id="custom" style="background:${settings.accent}" aria-label="custom accent theme" aria-pressed="${settings.theme === 'custom'}">
-      <div class="theme-card-name" style="color:${onColor(settings.accent)}">custom</div>
-      <div class="theme-dots">
-        <span class="theme-dot" style="background:var(--bg)"></span>
-        <span class="theme-dot" style="background:${settings.accent}"></span>
-        <span class="theme-dot" style="background:${onColor(settings.accent)}"></span>
-      </div>
+    <button class="theme-card theme-card-custom${customOn ? ' active' : ''}" data-id="custom" style="--t-bg:#1a1a1e;--t-main:${settings.accent};--t-text:#e6e6ea" aria-label="custom accent theme" aria-pressed="${customOn}">
+      <span class="theme-stage"><span class="theme-word"><span>chu</span><span class="tw-pivot">n</span><span>k</span></span></span>
+      <span class="theme-meta">
+        <span class="theme-card-name">custom</span>
+        <span class="theme-dots"><i style="background:#1a1a1e"></i><i style="background:${settings.accent}"></i><i style="background:#e6e6ea"></i></span>
+      </span>
     </button>`;
   $('#themeGrid').innerHTML = cards + custom;
+  paintAccentUI();
+}
+
+function paintAccentUI() {
+  const input = $('#setAccent');
+  if (input) input.value = settings.accent;
+  const val = $('#accentVal');
+  if (val) val.textContent = settings.accent;
+  $$('#accentPresets [data-accent]').forEach(b => {
+    const on = b.dataset.accent.toLowerCase() === settings.accent.toLowerCase();
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-pressed', on);
+  });
 }
 
 function applyAccent(hex) {
   if (!isHex(hex)) return;
   settings.accent = hex.toLowerCase();
   saveSettings();
-  $('#setAccent').value = settings.accent;
-  $('#accentVal').textContent = settings.accent;
-  if (settings.theme === 'custom') applyTheme('custom');
+  if (settings.theme !== 'custom') applyTheme('custom');
+  applyAccentVars();
   renderThemeGrid();
 }
 
@@ -1340,43 +1354,103 @@ function toast(html, ms = 3400) {
 }
 
 /* ============================================================
-   MODALS
+   PANELS — drawer + modals
    ============================================================ */
-const MODALS = ['modalSettings', 'modalTheme', 'modalShortcuts', 'modalCustom', 'modalConfirm'];
+const MODALS = ['modalShortcuts', 'modalCustom', 'modalConfirm'];
+const DRAWER = 'drawerSettings';
 let lastFocus = null;
 let confirmCb = null;
 
+function drawerEl() { return $('#' + DRAWER); }
+function drawerOpen() { const d = drawerEl(); return !!d && !d.classList.contains('hidden'); }
+
 function openModalEl() {
+  if (drawerOpen()) return drawerEl();
   return MODALS.map(id => $('#' + id)).find(m => m && !m.classList.contains('hidden')) || null;
 }
 function anyModalOpen() { return !!openModalEl(); }
 
+function setBackgroundInert(on) {
+  ['main', '.topbar'].forEach(sel => {
+    const el = $(sel);
+    if (el) el.inert = on;
+  });
+}
+
+function hidePanels() {
+  MODALS.forEach(id => { const m = $('#' + id); if (m) m.classList.add('hidden'); });
+  const d = drawerEl();
+  if (d) { d.classList.add('hidden'); d.setAttribute('aria-hidden', 'true'); }
+  const s = $('#drawerScrim');
+  if (s) s.classList.add('hidden');
+}
+
+function focusInto(panel, selector) {
+  const first = panel.querySelector(selector);
+  if (first) { setTimeout(() => first.focus({ preventScroll: true }), 30); return; }
+  const anyFocus = panel.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+  if (anyFocus) setTimeout(() => anyFocus.focus({ preventScroll: true }), 30);
+}
+
 function openModal(id) {
   const modal = $('#' + id);
   if (!modal) return;
-  lastFocus = document.activeElement;
-  MODALS.forEach(m => $('#' + m).classList.add('hidden'));
+  if (!anyModalOpen()) lastFocus = document.activeElement;
+  hidePanels();
   modal.classList.remove('hidden');
   document.body.classList.add('modal-open');
-  ['main', '.topbar', '.footer'].forEach(sel => {
-    const el = $(sel);
-    if (el) el.inert = true;
-  });
-  const focusable = modal.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-  if (focusable) setTimeout(() => focusable.focus({ preventScroll: true }), 20);
+  setBackgroundInert(true);
+  focusInto(modal);
+}
+
+function openDrawer(section) {
+  const drawer = drawerEl();
+  if (!drawer) return;
+  const wasOpen = drawerOpen();
+  if (!wasOpen) lastFocus = document.activeElement;
+  hidePanels();
+  drawer.classList.remove('hidden');
+  drawer.setAttribute('aria-hidden', 'false');
+  const scrim = $('#drawerScrim');
+  if (scrim) scrim.classList.remove('hidden');
+  document.body.classList.add('modal-open');
+  setBackgroundInert(true);
+  renderThemeGrid();
+  applySettingsToUI();
+  if (section) {
+    requestAnimationFrame(() => scrollDrawerTo(section));
+    setActiveChip(section);
+  } else if (!wasOpen) {
+    const body = $('#drawerBody');
+    if (body) body.scrollTop = 0;
+    setActiveChip('secReading');
+  }
+  if (!wasOpen) focusInto(drawer, '#closeSettings');
 }
 
 function closeModals() {
-  MODALS.forEach(id => $('#' + id).classList.add('hidden'));
+  hidePanels();
   document.body.classList.remove('modal-open');
-  ['main', '.topbar', '.footer'].forEach(sel => {
-    const el = $(sel);
-    if (el) el.inert = false;
-  });
+  setBackgroundInert(false);
   if (lastFocus && typeof lastFocus.focus === 'function') {
     try { lastFocus.focus({ preventScroll: true }); } catch { /* gone */ }
   }
   lastFocus = null;
+}
+
+function scrollDrawerTo(id) {
+  const body = $('#drawerBody');
+  const el = $('#' + id);
+  if (!body || !el) return;
+  body.scrollTo({ top: Math.max(0, el.offsetTop - 8), behavior: 'smooth' });
+}
+
+function setActiveChip(id) {
+  $$('#drawerNav [data-goto]').forEach(b => {
+    const on = b.dataset.goto === id;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-current', on ? 'true' : 'false');
+  });
 }
 
 function trapTab(e, modal) {
@@ -1399,23 +1473,103 @@ function confirmAction(title, body, okLabel, cb) {
 /* ============================================================
    SETTINGS UI
    ============================================================ */
+function paintRange(input) {
+  if (!input) return;
+  const min = Number(input.min) || 0;
+  const max = Number(input.max) || 100;
+  const val = Number(input.value) || 0;
+  const pct = max > min ? clamp(((val - min) / (max - min)) * 100, 0, 100) : 0;
+  input.style.setProperty('--fill', pct.toFixed(1) + '%');
+}
+
+function updateGoalUI() {
+  const goal = settings.goal;
+  const words = wordsToday();
+  const out = $('#setGoalVal');
+  if (out) out.textContent = goal ? fmtInt(goal) : 'off';
+  const fill = $('#setGoalFill');
+  if (fill) fill.style.width = (goal ? clamp((words / goal) * 100, 0, 100) : 0).toFixed(1) + '%';
+  const today = $('#setGoalToday');
+  if (today) {
+    today.textContent = goal
+      ? `${fmtInt(words)} of ${fmtInt(goal)} words today`
+      : `${fmtInt(words)} words today · goal off`;
+  }
+  $$('#goalPresets [data-goal]').forEach(b => {
+    const on = Number(b.dataset.goal) === goal;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-pressed', on);
+  });
+}
+
+function storageBytes() {
+  let total = 0;
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || k.indexOf('chunky.') !== 0) continue;
+      total += (k.length + (localStorage.getItem(k) || '').length) * 2;
+    }
+  } catch { /* storage unavailable */ }
+  return total;
+}
+
+function fmtBytes(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(bytes < 10240 ? 1 : 0) + ' KB';
+  return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
+function renderDataCells() {
+  const sessions = $('#setStatSessions');
+  if (!sessions) return;
+  sessions.textContent = fmtInt(runs.length);
+  const days = $('#setStatDays');
+  if (days) days.textContent = fmtInt(new Set(runs.map(r => dayKey(new Date(r.ts)))).size);
+  const size = $('#setStatSize');
+  if (size) size.textContent = fmtBytes(storageBytes());
+}
+
 function applySettingsToUI() {
   document.documentElement.style.setProperty('--chunk-size', settings.fontSize + 'px');
   document.documentElement.style.setProperty('--read-font', settings.fontFamily);
   if (settings.theme === 'custom') applyAccentVars();
+
   const fs = $('#setFontSize');
-  if (fs) fs.value = settings.fontSize;
-  $('#setFontSizeVal').textContent = settings.fontSize + 'px';
-  $('#setFontFamily').value = settings.fontFamily;
+  if (fs) { fs.value = settings.fontSize; paintRange(fs); }
+  const fsVal = $('#setFontSizeVal');
+  if (fsVal) fsVal.textContent = settings.fontSize;
+
+  $$('#fontCards [data-font]').forEach(b => {
+    const on = b.dataset.font === settings.fontFamily;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-pressed', on);
+  });
+
   $('#setPivot').checked = settings.pivot;
   $('#setShowPassage').checked = settings.showPassage;
-  $('#setPunctStrength').value = settings.punctStrength;
+
+  $$('#punctSeg [data-punct]').forEach(b => {
+    const on = b.dataset.punct === settings.punctStrength;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-pressed', on);
+  });
+
   $('#setRamp').checked = settings.ramp;
   $('#setSmart').checked = settings.smartChunks;
   $('#setSound').checked = settings.sound;
-  $('#setGoal').value = settings.goal;
-  $('#setAccent').value = settings.accent;
-  $('#accentVal').textContent = settings.accent;
+  $('#rampRow').classList.toggle('on', settings.ramp);
+  $('#smartRow').classList.toggle('on', settings.smartChunks);
+  $('#soundRow').classList.toggle('on', settings.sound);
+
+  const goal = $('#setGoal');
+  if (goal) { goal.value = settings.goal; paintRange(goal); }
+  updateGoalUI();
+  renderDataCells();
+  paintAccentUI();
+
+  $('#setPreviewLine').classList.toggle('no-pivot', !settings.pivot);
+  $('#setPreviewPassage').classList.toggle('off', !settings.showPassage);
   $('.rsvp-line').classList.toggle('no-pivot', !settings.pivot);
   $('#passage').classList.toggle('off', !settings.showPassage);
   syncPills();
@@ -1739,27 +1893,59 @@ function clearData() {
 /* ============================================================
    SHORTCUTS
    ============================================================ */
-const SHORTCUTS = [
-  { keys: ['space'], label: 'start / pause reading' },
-  { keys: ['enter'], label: 'start · next passage on results' },
-  { keys: ['r'], label: 'restart this passage' },
-  { keys: ['←', '→'], label: 'speed down / up' },
-  { keys: ['↑', '↓'], label: 'chunk size − / +' },
-  { keys: ['b'], label: 'peek at the previous chunk' },
-  { keys: ['esc'], label: 'quit session / close panels' },
-  { keys: ['1', '4'], label: 'answer comprehension question' },
-  { keys: ['v'], label: 'toggle passage below' },
-  { keys: ['m'], label: 'toggle smart chunks' },
-  { keys: ['f'], label: 'fullscreen' },
-  { keys: ['t'], label: 'theme picker' },
-  { keys: ['s'], label: 'settings' },
-  { keys: ['?'], label: 'this panel' },
+const SHORTCUT_GROUPS = [
+  {
+    title: 'playback',
+    icon: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8.5 5.6v12.8L19 12z"/></svg>',
+    items: [
+      { keys: ['space'], label: 'start / pause', wide: true, accent: true },
+      { keys: ['enter'], label: 'start reading' },
+      { keys: ['r'], label: 'restart this passage' },
+      { keys: ['esc'], label: 'quit session' },
+    ],
+  },
+  {
+    title: 'pace & chunk',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h3l2-5 4 10 2-5h7"/></svg>',
+    items: [
+      { keys: ['←', '→'], label: 'slower / faster' },
+      { keys: ['↑', '↓'], label: 'smaller / bigger chunks' },
+      { keys: ['b'], label: 'peek previous chunk' },
+      { keys: ['v'], label: 'passage under stage' },
+      { keys: ['m'], label: 'smart chunks' },
+    ],
+  },
+  {
+    title: 'comprehension',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M8.4 12.2l2.4 2.4 4.8-5"/></svg>',
+    items: [
+      { keys: ['1', '2', '3', '4'], label: 'answer a question' },
+      { keys: ['n', 'p'], label: 'zen next / previous' },
+    ],
+  },
+  {
+    title: 'app',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 7h5M13 7h7M4 12h10M18 12h2M4 17h3M11 17h9"/><circle cx="11" cy="7" r="1.9"/><circle cx="16" cy="12" r="1.9"/><circle cx="9" cy="17" r="1.9"/></svg>',
+    items: [
+      { keys: ['s'], label: 'settings' },
+      { keys: ['t'], label: 'appearance' },
+      { keys: ['f'], label: 'fullscreen' },
+      { keys: ['?'], label: 'this sheet' },
+    ],
+  },
 ];
 
 function renderShortcutList() {
-  $('#shortcutList').innerHTML = SHORTCUTS.map(s => `
-    <div class="shortcut-row"><span>${s.label}</span><span class="keys">${s.keys.map(k => `<kbd>${k}</kbd>`).join('')}</span></div>`).join('');
-  $('#footerKeys').innerHTML = '<button class="footer-link" id="btnFooterShortcuts" type="button"><kbd>?</kbd> shortcuts</button>';
+  $('#shortcutList').innerHTML = SHORTCUT_GROUPS.map(g => `
+    <section class="sc-group">
+      <h3 class="sc-title"><span class="sc-icon" aria-hidden="true">${g.icon}</span>${g.title}</h3>
+      <div class="sc-rows">${g.items.map(it => `
+        <div class="sc-row">
+          <span class="sc-label">${it.label}</span>
+          <span class="keys">${it.keys.map(k => `<kbd class="${it.wide ? 'key-wide' : ''}${it.accent ? ' key-accent' : ''}">${k}</kbd>`).join('')}</span>
+        </div>`).join('')}
+      </div>
+    </section>`).join('');
 }
 
 /* ============================================================
@@ -1773,16 +1959,20 @@ function attachEvents() {
     if (session && session.status === 'running') pauseReading();
     switchView('stats');
   });
-  $('#btnSettings').addEventListener('click', () => { applySettingsToUI(); openModal('modalSettings'); });
-  $('#btnTheme').addEventListener('click', () => { renderThemeGrid(); openModal('modalTheme'); });
+  $('#btnSettings').addEventListener('click', () => openDrawer());
+  $('#btnTheme').addEventListener('click', () => openDrawer('secAppearance'));
   $('#btnShortcuts').addEventListener('click', () => openModal('modalShortcuts'));
 
-  // modal chrome
+  // panel chrome
   $('#closeSettings').addEventListener('click', closeModals);
-  $('#closeTheme').addEventListener('click', closeModals);
+  $('#btnCloseDrawer').addEventListener('click', closeModals);
+  $('#drawerScrim').addEventListener('click', closeModals);
   $('#closeShortcuts').addEventListener('click', closeModals);
   $('#closeCustom').addEventListener('click', closeModals);
-  MODALS.forEach(m => $('#' + m).addEventListener('mousedown', e => { if (e.target.id === m) closeModals(); }));
+  MODALS.forEach(m => {
+    const el = $('#' + m);
+    if (el) el.addEventListener('mousedown', e => { if (e.target.id === m) closeModals(); });
+  });
   $('#confirmCancel').addEventListener('click', closeModals);
   $('#confirmOk').addEventListener('click', () => {
     const cb = confirmCb;
@@ -1908,22 +2098,64 @@ function attachEvents() {
     const n = runs.filter(r => dayKey(new Date(r.ts)) === k).length;
     toast(`${new Date(k + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} — <strong>${n}</strong> session${n === 1 ? '' : 's'}`);
   });
-  $('#footerKeys').addEventListener('click', e => {
-    if (e.target.closest('#btnFooterShortcuts')) openModal('modalShortcuts');
+  // settings drawer nav
+  let navLockUntil = 0;
+  $('#drawerNav').addEventListener('click', e => {
+    const chip = e.target.closest('[data-goto]');
+    if (!chip) return;
+    navLockUntil = performance.now() + 900;
+    scrollDrawerTo(chip.dataset.goto);
+    setActiveChip(chip.dataset.goto);
   });
+  const drawerBody = $('#drawerBody');
+  if (drawerBody) {
+    const sections = $$('#drawerBody .set-section');
+    let navRaf = 0;
+    drawerBody.addEventListener('scroll', () => {
+      if (navRaf) return;
+      navRaf = requestAnimationFrame(() => {
+        navRaf = 0;
+        if (!sections.length) return;
+        if (performance.now() < navLockUntil) return;
+        const atBottom = drawerBody.scrollTop + drawerBody.clientHeight >= drawerBody.scrollHeight - 8;
+        let current = sections[0].id;
+        if (atBottom) {
+          current = sections[sections.length - 1].id;
+        } else {
+          sections.forEach(sec => {
+            if (sec.offsetTop <= drawerBody.scrollTop + 120) current = sec.id;
+          });
+        }
+        setActiveChip(current);
+      });
+    });
+  }
 
   // settings controls
   $('#setFontSize').addEventListener('input', e => {
-    settings.fontSize = Number(e.target.value); saveSettings(); applySettingsToUI();
+    settings.fontSize = Number(e.target.value);
+    saveSettings();
+    paintRange(e.target);
+    applySettingsToUI();
   });
-  $('#setFontFamily').addEventListener('change', e => {
-    settings.fontFamily = e.target.value; saveSettings(); applySettingsToUI();
+  $('#fontCards').addEventListener('click', e => {
+    const card = e.target.closest('[data-font]');
+    if (!card) return;
+    settings.fontFamily = card.dataset.font;
+    saveSettings();
+    applySettingsToUI();
     if (session) { const c = session.chunks[session.idx]; if (c) fitChunk(c.text); }
   });
   $('#setPivot').addEventListener('change', e => { settings.pivot = e.target.checked; saveSettings(); applySettingsToUI(); });
   $('#setShowPassage').addEventListener('change', e => { settings.showPassage = e.target.checked; saveSettings(); applySettingsToUI(); });
-  $('#setPunctStrength').addEventListener('change', e => { settings.punctStrength = e.target.value; saveSettings(); });
-  $('#setRamp').addEventListener('change', e => { settings.ramp = e.target.checked; saveSettings(); });
+  $('#punctSeg').addEventListener('click', e => {
+    const btn = e.target.closest('[data-punct]');
+    if (!btn) return;
+    settings.punctStrength = btn.dataset.punct;
+    saveSettings();
+    applySettingsToUI();
+  });
+  $('#setRamp').addEventListener('change', e => { settings.ramp = e.target.checked; saveSettings(); applySettingsToUI(); });
   $('#setSmart').addEventListener('change', e => {
     settings.smartChunks = e.target.checked;
     saveSettings();
@@ -1932,29 +2164,59 @@ function attachEvents() {
       newSession({ same: true, text: session.mode === 'custom' ? session.text : null, resumePos: session.idx });
     }
   });
-  $('#setSound').addEventListener('change', e => { settings.sound = e.target.checked; saveSettings(); if (settings.sound) sfx.tick(); });
-  $('#setGoal').addEventListener('change', e => {
+  $('#setSound').addEventListener('change', e => {
+    settings.sound = e.target.checked;
+    saveSettings();
+    if (settings.sound) sfx.tick();
+    applySettingsToUI();
+  });
+
+  const setGoalValue = value => {
+    settings.goal = clamp(Number(value) || 0, 0, 5000);
+    saveSettings();
+    const goal = $('#setGoal');
+    if (goal) { goal.value = settings.goal; paintRange(goal); }
+    updateGoalUI();
+    renderGoal();
+  };
+  $('#setGoal').addEventListener('input', e => {
     settings.goal = clamp(Number(e.target.value) || 0, 0, 5000);
     saveSettings();
-    e.target.value = settings.goal;
+    paintRange(e.target);
+    updateGoalUI();
     renderGoal();
   });
+  $('#goalPresets').addEventListener('click', e => {
+    const chip = e.target.closest('[data-goal]');
+    if (chip) setGoalValue(chip.dataset.goal);
+  });
+
   $('#btnResetSettings').addEventListener('click', () => {
     const theme = settings.theme, accent = settings.accent;
     settings = Object.assign({}, DEFAULT_SETTINGS, { theme, accent });
-    saveSettings(); applySettingsToUI();
+    saveSettings();
+    applySettingsToUI();
+    renderThemeGrid();
+    renderGoal();
     toast('settings restored to defaults');
   });
 
-  // theme
+  // appearance
   $('#themeGrid').addEventListener('click', e => {
     const card = e.target.closest('.theme-card');
     if (!card) return;
     applyTheme(card.dataset.id);
-    closeModals();
+    renderThemeGrid();
+  });
+  $('#accentPresets').addEventListener('click', e => {
+    const swatch = e.target.closest('[data-accent]');
+    if (swatch) applyAccent(swatch.dataset.accent);
   });
   $('#setAccent').addEventListener('input', e => applyAccent(e.target.value));
-  $('#btnUseCustom').addEventListener('click', () => { applyTheme('custom'); closeModals(); });
+
+  // data
+  $('#btnExportDrawer').addEventListener('click', exportData);
+  renderDataCells();
 
   // custom text
   $('#customText').addEventListener('input', updateCustomCount);
@@ -2153,9 +2415,9 @@ function onKeyDown(e) {
       else document.documentElement.requestFullscreen().catch(() => {});
       return;
     case 't':
-      renderThemeGrid(); openModal('modalTheme'); return;
+      openDrawer('secAppearance'); return;
     case 's':
-      applySettingsToUI(); openModal('modalSettings'); return;
+      openDrawer(); return;
     case '?':
       e.preventDefault(); openModal('modalShortcuts'); return;
   }
@@ -2194,6 +2456,7 @@ function init() {
   if (patched) persistRuns();
   applyTheme(settings.theme);
   applySettingsToUI();
+  renderThemeGrid();
   attachEvents();
   renderShortcutList();
   refreshDailyButton();
