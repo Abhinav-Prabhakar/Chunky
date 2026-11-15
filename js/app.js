@@ -454,7 +454,7 @@ function setOverlay(state) {
       sub.textContent = 'one fixed passage, fixed settings.';
     } else {
       title.innerHTML = 'press <kbd>space</kbd> to start';
-      sub.textContent = 'let the words come to you.';
+      sub.textContent = 'eyes on the pivot.';
     }
   } else if (state === 'paused') {
     title.innerHTML = 'paused';
@@ -1337,15 +1337,32 @@ const ACH_ICONS = {
   daily7:   '<circle cx="12" cy="12" r="4"/><path d="M12 2.5V5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M18.7 5.3l-1.8 1.8M7.1 16.9l-1.8 1.8"/>',
 };
 
+const ACH_GROUPS = [
+  ['sessions', ['first', 'ten', 'fifty']],
+  ['speed', ['speed400', 'warp600', 'warp1200', 'warp2500']],
+  ['streaks', ['streak7', 'streak30', 'daily7']],
+  ['comprehension', ['perfect', 'scholar', 'eff500']],
+  ['practice', ['marathon', 'zen10', 'chunky']],
+];
+
 function renderAchievements() {
+  const byId = new Map(ACHIEVEMENTS.map(a => [a.id, a]));
+  const placed = new Set(ACH_GROUPS.flatMap(([, ids]) => ids));
+  const leftovers = ACHIEVEMENTS.filter(a => !placed.has(a.id)).map(a => a.id);
+  const groups = ACH_GROUPS.map(([label, ids]) => [label, ids.slice()]);
+  if (leftovers.length) groups[groups.length - 1][1].push(...leftovers);
+
   $('#achProgress').textContent = `${unlocked.length} / ${ACHIEVEMENTS.length} unlocked`;
-  $('#achGrid').innerHTML = ACHIEVEMENTS.map(a => {
-    const got = unlocked.includes(a.id);
-    return `
-    <li class="ach${got ? '' : ' locked'}">
-      <span class="ach-mark" aria-hidden="true">${svgIcon(ACH_ICONS[a.id] || ACH_ICONS.first)}</span>
-      <div class="ach-body"><div class="ach-name">${a.name}</div><div class="ach-desc">${a.desc}</div></div>
-    </li>`;
+  $('#achGrid').innerHTML = groups.map(([label, ids]) => {
+    const items = ids.map(id => {
+      const a = byId.get(id);
+      if (!a) return '';
+      const got = unlocked.includes(a.id);
+      return `<span class="ach-item${got ? '' : ' locked'}" title="${escapeHTML(a.desc)}">
+        <span class="ach-mark" aria-hidden="true">${svgIcon(ACH_ICONS[a.id] || ACH_ICONS.first)}</span>${a.name}<span class="sr-only"> — ${escapeHTML(a.desc)}${got ? ' · earned' : ''}</span>
+      </span>`;
+    }).join('');
+    return `<div class="ach-row"><span class="ach-group">${label}</span><div class="ach-items">${items}</div></div>`;
   }).join('');
 }
 
@@ -1359,21 +1376,23 @@ const CAT_ICONS = {
 };
 const DIFF_LEVEL = { easy: 1, medium: 2, hard: 3 };
 
+/* the library reads as a catalogue: numbered plates, one per text */
 function renderPassages() {
   const read = PASSAGES.filter(p => readCounts[p.id]).length;
   $('#passagesProgress').textContent = `${read} / ${PASSAGES.length} read`;
-  $('#passagesGrid').innerHTML = PASSAGES.map(p => {
+  $('#passagesGrid').innerHTML = PASSAGES.map((p, idx) => {
     const n = readCounts[p.id] || 0;
     const level = DIFF_LEVEL[p.difficulty] || 1;
     const ticks = [1, 2, 3].map(i => `<i${i <= level ? ' class="on"' : ''}></i>`).join('');
     return `<li>
-      <button class="lib-row${n ? ' is-read' : ''}" type="button" data-passage="${p.id}" title="${escapeHTML(p.title)} — ${p.difficulty}">
-        <span class="lib-glyph" aria-hidden="true">${svgIcon(CAT_ICONS[p.category] || CAT_ICONS.science)}</span>
-        <span class="lib-body">
-          <span class="lib-title">${escapeHTML(p.title)}</span>
-          <span class="lib-meta">${p.category} · ${p.length}<span class="lib-diff" aria-hidden="true">${ticks}</span></span>
+      <button class="lib-plate${n ? ' is-read' : ''}" type="button" data-passage="${p.id}" title="${escapeHTML(p.title)} — ${p.difficulty}, ${p.length}">
+        <span class="lib-top">
+          <span class="lib-num">${String(idx + 1).padStart(2, '0')}</span>
+          <span class="lib-glyph" aria-hidden="true">${svgIcon(CAT_ICONS[p.category] || CAT_ICONS.science)}</span>
+          <span class="lib-state">${n ? `read ${n}×` : 'unread'}</span>
         </span>
-        <span class="lib-state">${n ? `read ${n}×` : 'unread'}</span>
+        <span class="lib-title">${escapeHTML(p.title)}</span>
+        <span class="lib-meta"><span>${p.category} · ${p.length}</span><span class="lib-diff" aria-hidden="true">${ticks}</span></span>
       </button>
     </li>`;
   }).join('');
@@ -1558,11 +1577,9 @@ function openDrawer(section) {
   applySettingsToUI();
   if (section) {
     requestAnimationFrame(() => scrollDrawerTo(section));
-    setActiveChip(section);
   } else if (!wasOpen) {
     const body = $('#drawerBody');
     if (body) body.scrollTop = 0;
-    setActiveChip('secReading');
   }
   if (!wasOpen) focusInto(drawer, '#closeSettings');
 }
@@ -1596,14 +1613,6 @@ function scrollDrawerTo(id) {
   const el = $('#' + id);
   if (!body || !el) return;
   body.scrollTo({ top: Math.max(0, el.offsetTop - 8), behavior: 'smooth' });
-}
-
-function setActiveChip(id) {
-  $$('#drawerNav [data-goto]').forEach(b => {
-    const on = b.dataset.goto === id;
-    b.classList.toggle('active', on);
-    b.setAttribute('aria-current', on ? 'true' : 'false');
-  });
 }
 
 function trapTab(e, modal) {
@@ -2243,14 +2252,6 @@ function attachEvents() {
       renderStats();
     });
   });
-  // settings drawer nav
-  $('#drawerNav').addEventListener('click', e => {
-    const chip = e.target.closest('[data-goto]');
-    if (!chip) return;
-    scrollDrawerTo(chip.dataset.goto);
-    setActiveChip(chip.dataset.goto);
-  });
-
   // settings controls
   $('#setFontSize').addEventListener('input', e => {
     settings.fontSize = Number(e.target.value);

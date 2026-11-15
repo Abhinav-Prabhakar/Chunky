@@ -28,7 +28,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&family=Literata:opsz,wght@7..72,400;7..72,500&family=Inter:wght@400;500;600&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=8" />
+  <link rel="stylesheet" href="css/style.css?v=9" />
 </head>
 <body>
 
@@ -134,7 +134,7 @@
         </div>
         <div class="stage-overlay" id="stageOverlay">
           <div class="overlay-title" id="overlayTitle">press <kbd>space</kbd> to start</div>
-          <div class="overlay-sub" id="overlaySub">eyes on the pivot — let the words come to you</div>
+          <div class="overlay-sub" id="overlaySub">eyes on the pivot</div>
         </div>
       </div>
 
@@ -258,20 +258,24 @@
       <p class="view-note hidden" id="statsNote" role="status"></p>
 
       <div class="filters" id="statsFilters">
-        <div class="filter-group" role="group" aria-label="filter by mode">
+        <div class="filter-row">
           <span class="group-label">mode</span>
-          <button class="pill active" data-filter-mode="all" type="button">all</button>
-          <button class="pill" data-filter-mode="passage" type="button">passage</button>
-          <button class="pill" data-filter-mode="time" type="button">time</button>
-          <button class="pill" data-filter-mode="zen" type="button">zen</button>
-          <button class="pill" data-filter-mode="ramp" type="button">ramp</button>
-          <button class="pill" data-filter-mode="custom" type="button">custom</button>
+          <div class="segment" role="group" aria-label="filter by mode">
+            <button class="pill active" data-filter-mode="all" type="button">all</button>
+            <button class="pill" data-filter-mode="passage" type="button">passage</button>
+            <button class="pill" data-filter-mode="time" type="button">time</button>
+            <button class="pill" data-filter-mode="zen" type="button">zen</button>
+            <button class="pill" data-filter-mode="ramp" type="button">ramp</button>
+            <button class="pill" data-filter-mode="custom" type="button">custom</button>
+          </div>
         </div>
-        <div class="filter-group" role="group" aria-label="filter by range">
+        <div class="filter-row">
           <span class="group-label">range</span>
-          <button class="pill" data-filter-range="7" type="button">7d</button>
-          <button class="pill" data-filter-range="30" type="button">30d</button>
-          <button class="pill active" data-filter-range="all" type="button">all</button>
+          <div class="segment" role="group" aria-label="filter by range">
+            <button class="pill" data-filter-range="7" type="button">7d</button>
+            <button class="pill" data-filter-range="30" type="button">30d</button>
+            <button class="pill active" data-filter-range="all" type="button">all</button>
+          </div>
         </div>
       </div>
 
@@ -334,7 +338,7 @@
 
       <section class="sec">
         <div class="sec-head"><h2 class="sec-title"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="9" r="5.5"/><path d="M8.5 13.6 7 21l5-2.6L17 21l-1.5-7.4"/></svg>achievements</h2><span class="sec-sub" id="achProgress">0 / 16 unlocked</span></div>
-        <ul class="ach-grid" id="achGrid"></ul>
+        <div class="ach-index" id="achGrid"></div>
       </section>
 
       <section class="sec">
@@ -369,14 +373,6 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
   </div>
-
-  <nav class="drawer-nav" id="drawerNav" aria-label="settings sections">
-    <button class="nav-chip active" data-goto="secReading" type="button">reading</button>
-    <button class="nav-chip" data-goto="secAppearance" type="button">appearance</button>
-    <button class="nav-chip" data-goto="secPacing" type="button">pacing</button>
-    <button class="nav-chip" data-goto="secPractice" type="button">practice</button>
-    <button class="nav-chip" data-goto="secData" type="button">data</button>
-  </nav>
 
   <div class="drawer-body" id="drawerBody">
 
@@ -609,8 +605,8 @@
   <div class="noscript">chunky needs JavaScript to run. enable it and reload.</div>
 </noscript>
 
-<script src="js/passages.js?v=8"></script>
-<script src="js/engine.js?v=8"></script>
-<script src="js/app.js?v=8"></script>
+<script src="js/passages.js?v=9"></script>
+<script src="js/engine.js?v=9"></script>
+<script src="js/app.js?v=9"></script>
 </body>
 </html>
