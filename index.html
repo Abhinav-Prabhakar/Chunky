@@ -28,7 +28,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&family=Literata:opsz,wght@7..72,400;7..72,500&family=Inter:wght@400;500;600&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=7" />
+  <link rel="stylesheet" href="css/style.css?v=8" />
 </head>
 <body>
 
@@ -179,8 +179,12 @@
       </div>
       <h2 class="quiz-question" id="quizQuestion" tabindex="-1">Question goes here?</h2>
       <div class="quiz-options" id="quizOptions" role="radiogroup" aria-labelledby="quizQuestion"></div>
-      <div class="quiz-why hidden" id="quizWhy" role="status"></div>
-      <div class="quiz-foot"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> to answer<span class="quiz-score-preview" id="quizScorePreview"></span></div>
+      <div class="quiz-why hidden" id="quizWhy" role="status" aria-live="polite"></div>
+      <div class="quiz-foot">
+        <span class="quiz-hints" id="quizHints"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> to answer</span>
+        <button class="quiz-next hidden" id="quizNext" type="button">next question <kbd>↵</kbd></button>
+        <span class="quiz-score-preview" id="quizScorePreview"></span>
+      </div>
     </div>
   </section>
 
@@ -238,16 +242,19 @@
   <!-- ================= STATS VIEW ================= -->
   <section id="view-stats" class="view" aria-labelledby="statsHeading">
     <div class="stats-inner">
-      <div class="stats-head">
-        <h1 class="stats-title" id="statsHeading" tabindex="-1">your reading, measured</h1>
-        <div class="stats-head-actions">
-          <button class="btn ghost small" id="btnExport" type="button">export</button>
-          <label class="btn ghost small import-label" for="importFile">import</label>
-          <input type="file" id="importFile" accept="application/json,.json" hidden />
-          <button class="btn ghost small" id="btnCsv" type="button">csv</button>
-          <button class="btn ghost small danger" id="btnClearHistory" type="button">clear</button>
+      <header class="stats-head">
+        <div class="stats-heading">
+          <h1 class="stats-title" id="statsHeading" tabindex="-1">your reading, measured</h1>
+          <p class="stats-lede" id="statsLede"></p>
         </div>
-      </div>
+        <div class="stats-head-actions">
+          <button class="link-btn" id="btnExport" type="button">export</button>
+          <label class="link-btn import-label" for="importFile">import</label>
+          <input type="file" id="importFile" accept="application/json,.json" hidden />
+          <button class="link-btn" id="btnCsv" type="button">csv</button>
+          <button class="link-btn clear" id="btnClearHistory" type="button">clear</button>
+        </div>
+      </header>
       <p class="view-note hidden" id="statsNote" role="status"></p>
 
       <div class="filters" id="statsFilters">
@@ -260,7 +267,6 @@
           <button class="pill" data-filter-mode="ramp" type="button">ramp</button>
           <button class="pill" data-filter-mode="custom" type="button">custom</button>
         </div>
-        <span class="config-sep" aria-hidden="true"></span>
         <div class="filter-group" role="group" aria-label="filter by range">
           <span class="group-label">range</span>
           <button class="pill" data-filter-range="7" type="button">7d</button>
@@ -269,7 +275,7 @@
         </div>
       </div>
 
-      <div class="goal-panel">
+      <div class="goal-row">
         <div class="goal-head">
           <span class="goal-title">daily goal</span>
           <span class="goal-text" id="goalText">0 / 500 words</span>
@@ -279,71 +285,65 @@
         </div>
       </div>
 
-      <div class="tile-row">
-        <div class="tile"><div class="tile-num" id="statTests">0</div><div class="tile-label">sessions</div></div>
-        <div class="tile"><div class="tile-num" id="statWords">0</div><div class="tile-label">words read</div></div>
-        <div class="tile"><div class="tile-num" id="statTime">0</div><div class="tile-label">minutes reading</div></div>
-        <div class="tile"><div class="tile-num" id="statAvgWpm">0</div><div class="tile-label">avg wpm</div></div>
-        <div class="tile"><div class="tile-num" id="statAvgComp">—</div><div class="tile-label">avg comprehension</div></div>
-        <div class="tile">
-          <div class="tile-num streak"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 23c-4 0-7-2.8-7-7 0-2.4 1.2-4.4 2.4-6.1.4 1.4 1.4 2.4 2.6 2.8-.4-2.6.6-6.2 3.8-8.6-.3 3.2.8 4.8 2.3 6.6 1.2 1.5 2.9 3.3 2.9 5.7 0 4.2-3 6.6-7 6.6z"/></svg><span id="statStreak">0</span></div>
-          <div class="tile-label">day streak</div>
-        </div>
+      <div class="ledger">
+        <div class="ledger-cell"><span class="ledger-num" id="statTests">0</span><span class="ledger-label">sessions</span></div>
+        <div class="ledger-cell"><span class="ledger-num" id="statWords">0</span><span class="ledger-label">words read</span></div>
+        <div class="ledger-cell"><span class="ledger-num" id="statTime">0</span><span class="ledger-label">minutes</span></div>
+        <div class="ledger-cell"><span class="ledger-num" id="statAvgWpm">0</span><span class="ledger-label">avg wpm</span></div>
+        <div class="ledger-cell"><span class="ledger-num" id="statAvgComp">—</span><span class="ledger-label">comprehension</span></div>
+        <div class="ledger-cell"><span class="ledger-num accent" id="statStreak">0</span><span class="ledger-label">day streak</span></div>
       </div>
 
-      <div class="panel">
-        <div class="panel-head">
-          <span class="panel-title">chunk size — what it buys and costs</span>
-          <span class="panel-sub">scored sessions</span>
-        </div>
-        <div class="insight-wrap">
-          <table class="insight-table" aria-label="performance by chunk size">
-            <thead><tr><th>chunk</th><th>sessions</th><th>avg wpm</th><th>avg comprehension</th><th>effective</th></tr></thead>
-            <tbody id="chunkBody"></tbody>
-          </table>
-        </div>
-        <p class="stat-note">bigger chunks read faster, but usually cost comprehension — effective wpm is the honest column.</p>
-      </div>
-
-      <div class="panel">
-        <div class="panel-head"><span class="panel-title">speed — recent sessions</span><span class="panel-sub" id="statsChartBest"></span></div>
+      <section class="sec">
+        <div class="sec-head"><h2 class="sec-title"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>speed</h2><span class="sec-sub" id="statsChartBest"></span></div>
         <div class="chart-wrap">
           <canvas class="stats-chart" id="statsChart" role="img" aria-label="wpm across recent sessions"></canvas>
           <div class="chart-tip hidden" id="statsChartTip"></div>
         </div>
         <p class="sr-only" id="statsChartText"></p>
-      </div>
+      </section>
+
+      <section class="sec">
+        <div class="sec-head"><h2 class="sec-title"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h6M4 12h11M4 17h16"/></svg>chunk size</h2><span class="sec-sub">what it buys and costs</span></div>
+        <div class="insight-wrap">
+          <table class="insight-table" aria-label="performance by chunk size">
+            <thead><tr><th>chunk</th><th>sessions</th><th>avg wpm</th><th>comprehension</th><th>effective</th></tr></thead>
+            <tbody id="chunkBody"></tbody>
+          </table>
+        </div>
+        <p class="stat-note">bigger chunks read faster, but usually cost comprehension — effective wpm is the honest column.</p>
+      </section>
 
       <div class="chart-row">
-        <div class="panel">
-          <div class="panel-head"><span class="panel-title">distribution</span><span class="panel-sub">wpm spread</span></div>
+        <section class="sec">
+          <div class="sec-head"><h2 class="sec-title"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20v-9M10 20V5M15 20v-6M20 20V9"/></svg>distribution</h2><span class="sec-sub">wpm spread</span></div>
           <canvas class="stats-chart" id="distChart" role="img" aria-label="distribution of reading speeds"></canvas>
-        </div>
-        <div class="panel">
-          <div class="panel-head"><span class="panel-title">speed vs comprehension</span><span class="panel-sub">each dot is a session</span></div>
+        </section>
+        <section class="sec">
+          <div class="sec-head"><h2 class="sec-title"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><circle cx="8" cy="15" r="1.3" fill="currentColor" stroke="none"/><circle cx="12.5" cy="9.5" r="1.3" fill="currentColor" stroke="none"/><circle cx="16.5" cy="13.5" r="1.3" fill="currentColor" stroke="none"/><circle cx="19" cy="7" r="1.3" fill="currentColor" stroke="none"/></svg>speed vs comprehension</h2><span class="sec-sub">each dot is a session</span></div>
           <canvas class="stats-chart" id="scatterChart" role="img" aria-label="scatter plot of speed against comprehension"></canvas>
-        </div>
+        </section>
       </div>
 
-      <div class="panel">
-        <div class="panel-head"><span class="panel-title">activity — trailing 26 weeks</span><span class="panel-sub">one square per day</span></div>
+      <section class="sec">
+        <div class="sec-head"><h2 class="sec-title"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M9 9v12M15 9v12"/></svg>activity</h2><span class="sec-sub">trailing 26 weeks · one square per day</span></div>
         <div class="heatmap-months" id="heatmapMonths"></div>
         <div class="heatmap" id="heatmap"></div>
         <div class="heatmap-legend">less <span class="legend-cells"><span class="heat-cell l0"></span><span class="heat-cell l1"></span><span class="heat-cell l2"></span><span class="heat-cell l3"></span><span class="heat-cell l4"></span></span> more</div>
-      </div>
+      </section>
 
-      <div class="panel">
-        <div class="panel-head"><span class="panel-title">achievements</span><span class="panel-sub" id="achProgress">0 / 16 unlocked</span></div>
-        <div class="ach-grid" id="achGrid"></div>
-      </div>
+      <section class="sec">
+        <div class="sec-head"><h2 class="sec-title"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="9" r="5.5"/><path d="M8.5 13.6 7 21l5-2.6L17 21l-1.5-7.4"/></svg>achievements</h2><span class="sec-sub" id="achProgress">0 / 16 unlocked</span></div>
+        <ul class="ach-grid" id="achGrid"></ul>
+      </section>
 
-      <div class="panel">
-        <div class="panel-head"><span class="panel-title">passage library</span><span class="panel-sub" id="passagesProgress">0 / 15 read</span></div>
-        <div class="passage-grid" id="passagesGrid"></div>
-      </div>
+      <section class="sec">
+        <div class="sec-head"><h2 class="sec-title"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>passage library</h2><span class="sec-sub" id="passagesProgress">0 / 15 read</span></div>
+        <ul class="lib" id="passagesGrid"></ul>
+      </section>
 
-      <div class="panel">
-        <div class="panel-head"><span class="panel-title">recent sessions</span><span class="panel-sub" id="histCount">latest 8</span></div>
+      <section class="sec">
+        <div class="sec-head"><h2 class="sec-title"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>recent sessions</h2><span class="sec-sub" id="histCount">latest 8</span></div>
         <div class="hist-wrap">
           <table class="hist-table" aria-label="recent sessions">
             <thead><tr><th>when</th><th>mode</th><th>passage</th><th>wpm</th><th>eff.</th><th>comp.</th><th>chunk</th><th>words</th><th><span class="sr-only">delete</span></th></tr></thead>
@@ -351,9 +351,10 @@
           </table>
           <div class="hist-empty hidden" id="histEmpty">no sessions yet — run your first practice above.</div>
         </div>
-      </div>
+      </section>
     </div>
   </section>
+
 
 </main>
 
@@ -608,8 +609,8 @@
   <div class="noscript">chunky needs JavaScript to run. enable it and reload.</div>
 </noscript>
 
-<script src="js/passages.js?v=7"></script>
-<script src="js/engine.js?v=7"></script>
-<script src="js/app.js?v=7"></script>
+<script src="js/passages.js?v=8"></script>
+<script src="js/engine.js?v=8"></script>
+<script src="js/app.js?v=8"></script>
 </body>
 </html>

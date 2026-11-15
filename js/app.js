@@ -250,7 +250,10 @@ function newSession(opts = {}) {
   }
 
   if (mode !== 'custom') {
-    if (opts.daily) {
+    if (opts.passage) {
+      passage = opts.passage;
+      if (passage.length) settings.length = passage.length;
+    } else if (opts.daily) {
       const id = dailyPassageId(todayKey());
       passage = PASSAGES.find(p => p.id === id) || PASSAGES[0];
     } else {
@@ -718,21 +721,51 @@ function startQuiz(items, opts = {}) {
   renderQuizQuestion();
 }
 
+const MARK_OK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+const MARK_BAD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+
 function renderQuizQuestion() {
   const { items, i } = quiz;
   const item = items[i];
   if (!item) return finishQuiz();
   $('#quizCount').textContent = `question ${i + 1} / ${items.length}`;
   $('#quizQuestion').textContent = item.q;
-  $('#quizScorePreview').textContent = quiz.correct ? `${quiz.correct} correct so far` : '';
+  quiz.answered = false;
+  setQuizScore();
   const why = $('#quizWhy');
-  why.classList.add('hidden');
+  why.className = 'quiz-why hidden';
   why.innerHTML = '';
+  $('#quizHints').classList.remove('hidden');
+  $('#quizNext').classList.add('hidden');
   $('#quizOptions').innerHTML = item.options.map((opt, idx) => `
     <button class="quiz-opt" data-idx="${idx}" type="button" role="radio" aria-checked="false">
-      <span class="opt-key">${idx + 1}</span><span>${escapeHTML(opt)}</span>
+      <span class="opt-key">${idx + 1}</span>
+      <span class="opt-text">${escapeHTML(opt)}</span>
+      <span class="opt-mark" aria-hidden="true"></span>
     </button>`).join('');
   setTimeout(() => { const q = $('#quizQuestion'); if (q) q.focus({ preventScroll: true }); }, 30);
+}
+
+function setQuizScore() {
+  const el = $('#quizScorePreview');
+  if (el) el.textContent = quiz && quiz.correct ? `${quiz.correct} correct` : '';
+}
+
+/* the verdict reads as a line of writing, not another card: a mark, the
+   verdict, the answer in words when you missed it, then the explanation. */
+function renderQuizWhy(item, isCorrect) {
+  const why = $('#quizWhy');
+  if (!why) return;
+  const answer = isCorrect ? '' :
+    `<p class="why-answer">the answer was <b>${escapeHTML(item.options[item.answer])}</b>.</p>`;
+  why.className = 'quiz-why ' + (isCorrect ? 'ok' : 'bad');
+  why.innerHTML = `
+    <p class="why-head">
+      <span class="why-mark" aria-hidden="true">${isCorrect ? MARK_OK : MARK_BAD}</span>
+      <span class="why-verdict">${isCorrect ? 'correct' : 'not quite'}</span>
+    </p>
+    ${answer}
+    <p class="why-text">${escapeHTML(item.why || '')}</p>`;
 }
 
 function answerQuiz(choice) {
@@ -741,6 +774,7 @@ function answerQuiz(choice) {
   const item = items[i];
   if (!item) return;
   quiz.locked = true;
+  quiz.answered = true;
   const buttons = $$('.quiz-opt', $('#quizOptions'));
   buttons.forEach(b => { b.disabled = true; b.setAttribute('aria-checked', 'false'); });
   const isCorrect = choice === item.answer;
@@ -748,18 +782,36 @@ function answerQuiz(choice) {
   quiz.answers.push({ question: item, choice, correct: isCorrect });
   buttons.forEach(b => {
     const idx = Number(b.dataset.idx);
-    if (idx === item.answer) { b.classList.add('correct'); b.setAttribute('aria-checked', 'true'); }
-    else if (idx === choice) b.classList.add('wrong');
+    const mark = b.querySelector('.opt-mark');
+    if (idx === item.answer) {
+      b.classList.add('correct');
+      b.setAttribute('aria-checked', 'true');
+      if (mark) mark.innerHTML = MARK_OK;
+    } else if (idx === choice) {
+      b.classList.add('wrong');
+      if (mark) mark.innerHTML = MARK_BAD;
+    }
   });
-  $('#quizScorePreview').textContent = isCorrect ? 'correct.' : 'not quite.';
-  const why = $('#quizWhy');
-  why.innerHTML = `<strong>${isCorrect ? 'correct' : 'not quite'}</strong> — ${escapeHTML(item.why || '')}`;
-  why.classList.remove('hidden');
-  setTimeout(() => {
-    if (!quiz) return;
-    if (i + 1 < items.length) { quiz.i++; quiz.locked = false; renderQuizQuestion(); }
-    else finishQuiz();
-  }, isCorrect ? 850 : 1300);
+  setQuizScore();
+  renderQuizWhy(item, isCorrect);
+  $('#quizHints').classList.add('hidden');
+  const next = $('#quizNext');
+  const last = i + 1 >= items.length;
+  next.innerHTML = `${last ? 'see results' : 'next question'} <kbd>↵</kbd>`;
+  next.classList.remove('hidden');
+  setTimeout(() => { if (next && !next.classList.contains('hidden')) next.focus({ preventScroll: true }); }, 30);
+}
+
+/* nothing advances on a timer — you read the explanation, then say when. */
+function nextQuizQuestion() {
+  if (!quiz || !quiz.answered) return;
+  if (quiz.i + 1 < quiz.items.length) {
+    quiz.i++;
+    quiz.locked = false;
+    renderQuizQuestion();
+  } else {
+    finishQuiz();
+  }
 }
 
 function finishQuiz() {
@@ -995,7 +1047,7 @@ function drawLineChart(canvas, points, opts = {}) {
 
   const main = themeColor('--main');
   const grad = ctx.createLinearGradient(0, padT, 0, padT + ih);
-  grad.addColorStop(0, withAlpha(main, 0.33));
+  grad.addColorStop(0, withAlpha(main, 0.18));
   grad.addColorStop(1, withAlpha(main, 0));
   const path = () => {
     ctx.beginPath();
@@ -1012,7 +1064,7 @@ function drawLineChart(canvas, points, opts = {}) {
   ctx.closePath();
   ctx.fillStyle = grad; ctx.fill();
   path();
-  ctx.strokeStyle = main; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.stroke();
+  ctx.strokeStyle = main; ctx.lineWidth = 1.6; ctx.lineJoin = 'round'; ctx.stroke();
 
   if (opts.hline != null) {
     const hy = y(opts.hline);
@@ -1054,7 +1106,7 @@ function drawBarChart(canvas, values) {
   buckets.forEach((c, i) => {
     const bh = (c / maxC) * ih;
     ctx.fillStyle = c ? main : themeColor('--panel2');
-    ctx.globalAlpha = c ? 0.85 : 1;
+    ctx.globalAlpha = c ? 0.6 : 1;
     ctx.fillRect(padL + i * bw + 2, padT + ih - bh, Math.max(2, bw - 4), bh);
     ctx.globalAlpha = 1;
   });
@@ -1197,16 +1249,27 @@ function renderGoal() {
 function renderChunkTable() {
   const list = filteredRuns().filter(r => r.comp != null);
   const rows = [];
-  for (let size = 1; size <= 4; size++) {
+  const stats = [1, 2, 3, 4].map(size => {
     const group = list.filter(r => r.chunkSize === size);
-    if (!group.length) {
-      rows.push(`<tr class="${settings.chunkSize === size ? 'current' : ''}"><td>${size}w</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>`);
+    if (!group.length) return null;
+    return {
+      n: group.length,
+      wpm: group.reduce((a, r) => a + r.wpm, 0) / group.length,
+      comp: group.reduce((a, r) => a + r.comp, 0) / group.length,
+      eff: group.reduce((a, r) => a + (r.eff == null ? r.wpm : r.eff), 0) / group.length,
+    };
+  });
+  const peak = Math.max(1, ...stats.filter(Boolean).map(s => s.eff));
+  for (let size = 1; size <= 4; size++) {
+    const s = stats[size - 1];
+    const cls = settings.chunkSize === size ? 'current' : '';
+    if (!s) {
+      rows.push(`<tr class="${cls}"><td>${size}w</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>`);
       continue;
     }
-    const wpm = group.reduce((a, r) => a + r.wpm, 0) / group.length;
-    const comp = group.reduce((a, r) => a + r.comp, 0) / group.length;
-    const eff = group.reduce((a, r) => a + (r.eff == null ? r.wpm : r.eff), 0) / group.length;
-    rows.push(`<tr class="${settings.chunkSize === size ? 'current' : ''}"><td>${size}w</td><td>${group.length}</td><td>${fmtInt(wpm)}</td><td>${Math.round(comp)}%</td><td class="accent">${fmtInt(eff)}</td></tr>`);
+    /* effective wpm carries a bar, so the honest column reads as a shape */
+    rows.push(`<tr class="${cls}"><td>${size}w</td><td>${s.n}</td><td>${fmtInt(s.wpm)}</td><td>${Math.round(s.comp)}%</td>
+      <td class="accent eff-cell">${fmtInt(s.eff)}<span class="eff-bar"><i style="width:${Math.round(s.eff / peak * 100)}%"></i></span></td></tr>`);
   }
   $('#chunkBody').innerHTML = rows.join('');
 }
@@ -1250,31 +1313,78 @@ function renderHeatmap() {
   months.innerHTML = monthFirsts.map(m => `<span style="position:absolute; left:calc(${m.col} * 15px)">${m.label}</span>`).join('');
 }
 
+const svgIcon = (body, cls = '') =>
+  `<svg${cls ? ` class="${cls}"` : ''} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
+
+/* each achievement gets its own glyph, so the shelf says what it is
+   before you read a word of it. */
+const ACH_ICONS = {
+  first:    '<path d="M12 21v-7"/><path d="M12 14c0-3.3-2.7-6-6-6 0 3.3 2.7 6 6 6z"/><path d="M12 14c0-3.3 2.7-6 6-6 0 3.3-2.7 6-6 6z"/>',
+  ten:      '<path d="M12 21c-3.6 0-6-2.4-6-6 0-3 2.4-5.4 4-7.5 0 2.2.8 3.5 2 3.5 1.3 0 1.5-2.2 1-5 2.6 2.2 5 5.6 5 9 0 3.6-2.4 6-6 6z"/>',
+  fifty:    '<path d="M12 3 3 8l9 5 9-5-9-5z"/><path d="M3 13l9 5 9-5"/>',
+  streak7:  '<path d="M20.5 12a8.5 8.5 0 1 1-2.7-6.2"/><path d="M21 3v5h-5"/>',
+  streak30: '<path d="M12 3c2.9 2 4.5 5.2 4.5 9L13 16.5h-2L7.5 12C7.5 8.2 9.1 5 12 3z"/><path d="M9.5 15 7 21l4-2M14.5 15 17 21l-4-2"/>',
+  speed400: '<path d="M4 17a9 9 0 1 1 16 0"/><path d="M12 17l4.5-5.5"/><circle cx="12" cy="17" r="1.2" fill="currentColor" stroke="none"/>',
+  warp600:  '<path d="M3 8h9a3 3 0 1 0-3-3"/><path d="M3 12h12a3 3 0 1 1-3 3"/><path d="M3 16h6"/>',
+  warp1200: '<path d="M4 6v12l8-6-8-6z"/><path d="M12 6v12l8-6-8-6z"/>',
+  warp2500: '<path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/>',
+  perfect:  '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/>',
+  scholar:  '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
+  marathon: '<path d="M12 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11z"/><circle cx="12" cy="10" r="2.4"/>',
+  zen10:    '<path d="M20 12a8 8 0 1 1-2.6-5.9"/><circle cx="18.5" cy="4.5" r="1" fill="currentColor" stroke="none"/>',
+  eff500:   '<circle cx="12" cy="12" r="7.5"/><path d="M12 2.5v3.5M12 18v3.5M2.5 12H6M18 12h3.5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/>',
+  chunky:   '<rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/>',
+  daily7:   '<circle cx="12" cy="12" r="4"/><path d="M12 2.5V5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M18.7 5.3l-1.8 1.8M7.1 16.9l-1.8 1.8"/>',
+};
+
 function renderAchievements() {
   $('#achProgress').textContent = `${unlocked.length} / ${ACHIEVEMENTS.length} unlocked`;
   $('#achGrid').innerHTML = ACHIEVEMENTS.map(a => {
     const got = unlocked.includes(a.id);
     return `
-    <div class="ach${got ? '' : ' locked'}">
-      <div class="ach-badge">${got
-        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M8.21 13 6 22l6-3 6 3-2.21-9"/></svg>'
-        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>'}
-      </div>
-      <div><div class="ach-name">${a.name}</div><div class="ach-desc">${a.desc}</div></div>
-    </div>`;
+    <li class="ach${got ? '' : ' locked'}">
+      <span class="ach-mark" aria-hidden="true">${svgIcon(ACH_ICONS[a.id] || ACH_ICONS.first)}</span>
+      <div class="ach-body"><div class="ach-name">${a.name}</div><div class="ach-desc">${a.desc}</div></div>
+    </li>`;
   }).join('');
 }
+
+/* subjects, not labels: one glyph per shelf instead of another word */
+const CAT_ICONS = {
+  science:   '<path d="M9 3h6M10 3v6.2L4.8 18a2 2 0 0 0 1.7 3h11a2 2 0 0 0 1.7-3L14 9.2V3"/><path d="M7.5 14h9"/>',
+  psychology: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>',
+  history:   '<path d="M3 9h18L12 3 3 9z"/><path d="M6 21V9M12 21V9M18 21V9M3 21h18"/>',
+  nature:    '<path d="M20 4C10.5 4 4 10.5 4 20c9.5 0 16-6.5 16-16z"/><path d="M4 20 15.5 8.5"/>',
+  technology:'<rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/>',
+};
+const DIFF_LEVEL = { easy: 1, medium: 2, hard: 3 };
 
 function renderPassages() {
   const read = PASSAGES.filter(p => readCounts[p.id]).length;
   $('#passagesProgress').textContent = `${read} / ${PASSAGES.length} read`;
   $('#passagesGrid').innerHTML = PASSAGES.map(p => {
     const n = readCounts[p.id] || 0;
-    return `<span class="passage-chip${n ? ' read' : ''}" title="${escapeHTML(p.title)} — ${p.length}, ${p.difficulty}">
-      <span class="passage-chip-title">${escapeHTML(p.title)}</span>
-      <small>${p.length}${n ? ` · ${n}×` : ''}</small>
-    </span>`;
+    const level = DIFF_LEVEL[p.difficulty] || 1;
+    const ticks = [1, 2, 3].map(i => `<i${i <= level ? ' class="on"' : ''}></i>`).join('');
+    return `<li>
+      <button class="lib-row${n ? ' is-read' : ''}" type="button" data-passage="${p.id}" title="${escapeHTML(p.title)} — ${p.difficulty}">
+        <span class="lib-glyph" aria-hidden="true">${svgIcon(CAT_ICONS[p.category] || CAT_ICONS.science)}</span>
+        <span class="lib-body">
+          <span class="lib-title">${escapeHTML(p.title)}</span>
+          <span class="lib-meta">${p.category} · ${p.length}<span class="lib-diff" aria-hidden="true">${ticks}</span></span>
+        </span>
+        <span class="lib-state">${n ? `read ${n}×` : 'unread'}</span>
+      </button>
+    </li>`;
   }).join('');
+}
+
+function startPassageById(id) {
+  const passage = PASSAGES.find(p => p.id === id);
+  if (!passage) return;
+  if (settings.mode === 'custom') { settings.mode = 'passage'; saveSettings(); }
+  newSession({ passage });
+  switchView('test');
 }
 
 function relDay(ts) {
@@ -1320,6 +1430,7 @@ function renderStats() {
   const b = bestFor(best, settings.mode, settings.chunkSize);
   $('#statsChartBest').textContent = b ? `best at ${settings.chunkSize}w ${settings.mode} — ${b.label}`
     : best.legacy ? `personal best — ${best.legacy.label}` : 'no personal best yet';
+  renderStatsLede(list);
   renderGoal();
   renderChunkTable();
   renderHeatmap();
@@ -1328,6 +1439,23 @@ function renderStats() {
   renderHistory();
   renderFilterUI();
   deferDraw(drawStatsCharts);
+}
+
+/* one sentence that answers "how am I doing" before any chart does */
+function renderStatsLede(list) {
+  const el = $('#statsLede');
+  if (!el) return;
+  const n = list.length;
+  if (!n) { el.textContent = 'nothing measured yet — one session sets the baseline.'; return; }
+  const wpm = Math.round(list.reduce((a, s) => a + s.wpm, 0) / n);
+  const scored = list.filter(s => s.comp != null);
+  const comp = scored.length ? Math.round(scored.reduce((a, s) => a + s.comp, 0) / scored.length) : null;
+  if (comp == null) {
+    el.innerHTML = `<b>${fmtInt(n)}</b> session${n === 1 ? '' : 's'}, averaging <b>${fmtInt(wpm)} wpm</b> — no comprehension checks in this range yet.`;
+    return;
+  }
+  const eff = Math.round(wpm * comp / 100);
+  el.innerHTML = `<b>${fmtInt(n)}</b> session${n === 1 ? '' : 's'} at <b>${fmtInt(wpm)} wpm</b>, <b>${comp}%</b> comprehension — <b class="lede-eff">${fmtInt(eff)}</b> effective wpm.`;
 }
 
 function renderFilterUI() {
@@ -2061,6 +2189,7 @@ function attachEvents() {
     if (!btn || btn.disabled) return;
     answerQuiz(Number(btn.dataset.idx));
   });
+  $('#quizNext').addEventListener('click', nextQuizQuestion);
 
   // results
   $('#btnNewPassage').addEventListener('click', () => {
@@ -2097,6 +2226,11 @@ function attachEvents() {
     if (b.dataset.filterMode) statsFilter.mode = b.dataset.filterMode;
     if (b.dataset.filterRange) statsFilter.range = b.dataset.filterRange;
     renderStats();
+  });
+  $('#passagesGrid').addEventListener('click', e => {
+    const row = e.target.closest('[data-passage]');
+    if (!row) return;
+    startPassageById(row.dataset.passage);
   });
   $('#histBody').addEventListener('click', e => {
     const btn = e.target.closest('[data-del]');
@@ -2404,6 +2538,7 @@ function onKeyDown(e) {
 
   if (quizActive) {
     if (['1', '2', '3', '4'].includes(e.key)) { e.preventDefault(); answerQuiz(Number(e.key) - 1); return; }
+    if (e.key === 'Enter') { e.preventDefault(); nextQuizQuestion(); return; }
     return;
   }
 
