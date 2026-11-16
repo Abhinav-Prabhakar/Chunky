@@ -11,81 +11,62 @@
 </p>
 
 <p align="center">
-  <b>Read faster. Prove you understood it.</b><br>
-  <sub>RSVP word chunks &nbsp;·&nbsp; comprehension quizzes &nbsp;·&nbsp; stats that keep you honest</sub>
+  <b>Speed reading Lab</b><br>
+  <sub>RSVP word chunks &nbsp;·&nbsp; Comprehension quizzes &nbsp;·&nbsp; Stats that keep you honest</sub>
 </p>
 
 <img src="assets/readme/hero.png" alt="Chunky practice screen: a chunked phrase aligned on its pivot letter, with speed and chunk controls below" width="100%">
 
 <h3 align="center">3,000 wpm ceiling &nbsp;·&nbsp; 1–4 word chunks &nbsp;·&nbsp; 5 modes &nbsp;·&nbsp; 16 achievements &nbsp;·&nbsp; 0 accounts</h3>
 
-## The loop
+## What it does
 
-Eye movements put a floor under how fast you can read. Chunky removes the movement:
-one chunk per fixation, aligned on a pivot letter, at whatever pace you set. Whether
-your brain kept up is what the quiz is for.
-
-Change speed or chunk width mid-session and the text rebuilds around the word you were on.
-Nothing restarts. Nothing is lost.
+Eye movements limit how fast you can read. Chunky removes the movement:
+one chunk per fixation, aligned on a pivot letter, at whatever pace you set.
 
 <p align="center">
   <img src="assets/readme/loop.gif" alt="Animated loop of Chunky flashing two-word chunks at 520 wpm" width="100%">
 </p>
 
-<p align="center"><sub><b>520 wpm</b>, 2-word chunks, pivot on. The coral letter is where your eye lands first.</sub></p>
-
-## Does it stick?
-
-Every passage ends with a recall check, a one-line explanation for each answer, and a drill
-for whatever you missed. Speed you can't remember doesn't count.
+<p align="center"><sub>The app. You can also hide UI by turning on focus mode.</sub></p>
 
 <p align="center">
   <img src="assets/readme/quiz.png" alt="Comprehension quiz with multiple choice answers and an explanation" width="100%">
 </p>
 
-<p align="center"><sub>Measured recall, not vibes.</sub></p>
-
-## The numbers
-
-Effective wpm is raw speed multiplied by comprehension, so a 900 wpm skim loses to a
-600 wpm read. Every session, chunk size, streak and personal best is logged locally —
-and exportable when you want to take it somewhere else.
+<p align="center"><sub>You're asked to take a quiz after a run to measure your comprehension.</sub></p>
 
 <p align="center">
   <img src="assets/readme/results.png" alt="Results screen showing 805 wpm, 100% comprehension and a personal best badge" width="100%">
 </p>
 
-<p align="center"><sub>Raw speed, comprehension, effective wpm, personal best.</sub></p>
+<p align="center"><sub>Your effective WPM is calculated by multiplying raw speed with comprehension.</sub></p>
 
 <p align="center">
   <img src="assets/readme/stats.png" alt="Stats page with mode and range filters, a daily goal bar, six summary numbers, a speed chart and a chunk size table" width="100%">
 </p>
 
-<p align="center"><sub>Mode and range filters &nbsp;·&nbsp; six honest numbers &nbsp;·&nbsp; speed over time &nbsp;·&nbsp; what each chunk size buys</sub></p>
+<p align="center"><sub>Stats page so know how much you improved</sub></p>
 
 <p align="center">
   <img src="assets/readme/shelf.png" alt="Achievements grouped by sessions, speed, streaks, comprehension and practice, above a numbered catalogue of passages showing read state and difficulty" width="100%">
 </p>
 
-<p align="center"><sub>A trophy index, and a shelf: 16 achievements grouped by what they reward, 15 texts numbered and marked read.</sub></p>
+<p align="center"><sub>…which also contains a list of achievements to keep track!</sub></p>
 
-## The evidence
+## What I based this on
 
-Eight choices, each with a paper behind it.
-
-- **Eye movements set the floor.** Skilled reading is 200–250 ms pauses, 7–9 letters
+- **Eye movements limit your reading speed.** Skilled readers experience 200–250 ms pauses, 7–9 letters
   per jump, and a backward jump 10–15% of the time. One chunk per fixation removes
   the jumps. <sub>Rayner 1998 · Rubin & Turano 1992</sub>
 - **Two words is a good chunk.** Comprehension peaks at segments of about 12
   characters, and segments cut at idea boundaries beat equal-length random cuts.
   That's why chunks are 1–4 words, two by default. <sub>Cocklin et al. 1984</sub>
-- **Put the eye where recognition is fastest.** Words are recognized fastest slightly
-  left of center; every letter away from that point costs 20–30 ms. The pivot letter
-  is that spot, pinned in place. <sub>O'Regan et al. 1984 · Brysbaert & Nazir 2005</sub>
-- **Punctuation is information.** Drop sentence pauses from RSVP and comprehension
-  falls; add punctuation and clause pauses and readers prefer it. Sentence ends get
-  ~2×, commas ~1.4×. <sub>Masson 1983 · Castelhano & Muter 2001</sub>
-- **Leave the door open.** RSVP that allows self-pacing and rereading matches page
+- **Words are positioned slightly to the left of center.** Interestingly, words are recognized fastest slightly
+  left of center; every letter away from that point costs 20–30 ms. <sub>O'Regan et al. 1984 · Brysbaert & Nazir 2005</sub>
+- **Punctuation pauses.** Readers prefer punctuation and clause pauses, comprehension drops otherwise.
+  Sentence ends get ~2×, commas ~1.4×. <sub>Masson 1983 · Castelhano & Muter 2001</sub>
+- **Regressions are natural.** RSVP that allows self-pacing and rereading matches page
   reading; taking both away doesn't. That's why peek pauses on the last chunk and zen
   steps backward. <sub>Rahman & Muter 1999</sub>
 - **Testing beats rereading.** A week later: 56% recalled after a test, 42% after a
@@ -99,8 +80,7 @@ Eight choices, each with a paper behind it.
 
 > Average adult silent reading is 238 wpm. Eye-movement execution alone tops out near
 > 300, and past roughly 250 wpm comprehension starts to fall even when the eye
-> movements are gone. 3,000 is a practice ceiling, not a promise — effective wpm is
-> where the trade shows up.
+> movements are gone. 3,000 is only a practice ceiling.
 > <sub>Brysbaert 2019 · Primativo et al. 2016 · Riccardi & Di Nocera 2017</sub>
 
 <details>
@@ -125,8 +105,7 @@ Eight choices, each with a paper behind it.
 
 ## Themes
 
-Twelve themes and a custom accent — coral on charcoal by default. Dark first; light when
-the sun is up.
+Twelve themes and a custom accent, left on coral on charcoal by default.
 
 <p align="center">
   <img src="assets/readme/mobile-dark.png" alt="Chunky on a phone in the dark theme" width="38%">
@@ -136,7 +115,7 @@ the sun is up.
 
 ## Run it
 
-No build step. No dependencies. No account.
+There's no build step here, just do:
 
 ```sh
 git clone https://github.com/Abhinav-Prabhakar/Chunky.git
@@ -157,26 +136,6 @@ Then open <http://127.0.0.1:4173>. Or just use the
   <kbd>f</kbd> fullscreen &nbsp;
   <kbd>?</kbd> all shortcuts
 </p>
-
-<details>
-<summary><sub>Project structure</sub></summary>
-
-```text
-index.html          practice, quiz, results and stats
-css/style.css       the design system, tokens per theme
-js/passages.js      bundled passages, questions, explanations
-js/engine.js        pure logic: chunking, ORP, pacing, scoring, streaks
-js/app.js           reader loop, quiz, results, stats, routing
-manifest.json       PWA manifest
-sw.js               network-first service worker
-assets/icon.svg     app icon
-```
-
-`js/engine.js` has no DOM access, so `buildChunks`, `orpIndex`, `effectiveWpm`,
-`computeStreaks` and `scoreSession` can be tested in isolation. Everything persists
-under `chunky.*` keys in `localStorage`, with JSON/CSV export and JSON import.
-
-</details>
 
 <p align="center">
   <br>
