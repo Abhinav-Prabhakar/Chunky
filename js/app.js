@@ -85,7 +85,7 @@ function applyAccentVars() {
 function paintFavicon() {
   const cs = getComputedStyle(document.documentElement);
   const dim = (cs.getPropertyValue('--dim') || '').trim() || '#646669';
-  const main = (cs.getPropertyValue('--main') || '').trim() || '#e2b714';
+  const main = (cs.getPropertyValue('--main') || '').trim() || '#ff7a5c';
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'>`
     + `<rect x='2' y='2' width='13' height='13' rx='3.5' fill='${dim}'/>`
     + `<rect x='17' y='2' width='13' height='13' rx='3.5' fill='${dim}'/>`
@@ -106,7 +106,7 @@ function paintFavicon() {
 }
 
 function applyTheme(id) {
-  if (!THEME_IDS.includes(id)) id = 'monkey';
+  if (!THEME_IDS.includes(id)) id = 'custom';
   document.documentElement.setAttribute('data-theme', id);
   settings.theme = id;
   saveSettings();

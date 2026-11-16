@@ -1,21 +1,22 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="monkey">
+<html lang="en" data-theme="custom">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="description" content="Chunky — a Monkeytype-style practice gym for speed readers. Train word chunking with timed RSVP drills, comprehension quizzes, stats, streaks and achievements." />
   <title>chunky — speed reading practice</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='2' width='13' height='13' rx='3.5' fill='%23646669'/%3E%3Crect x='17' y='2' width='13' height='13' rx='3.5' fill='%23646669'/%3E%3Crect x='2' y='17' width='13' height='13' rx='3.5' fill='%23646669'/%3E%3Crect x='17' y='17' width='13' height='13' rx='3.5' fill='%23e2b714'/%3E%3C/svg%3E" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='2' width='13' height='13' rx='3.5' fill='%23646669'/%3E%3Crect x='17' y='2' width='13' height='13' rx='3.5' fill='%23646669'/%3E%3Crect x='2' y='17' width='13' height='13' rx='3.5' fill='%23646669'/%3E%3Crect x='17' y='17' width='13' height='13' rx='3.5' fill='%23ff7a5c'/%3E%3C/svg%3E" />
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="assets/icon.svg" />
-  <meta name="theme-color" id="metaTheme" content="#323437" />
+  <meta name="theme-color" id="metaTheme" content="#1a1a1e" />
 
   <!-- apply saved theme before first paint to avoid a flash of the default -->
   <script>
   (function () {
     try {
       var s = JSON.parse(localStorage.getItem('chunky.settings') || '{}');
-      var t = s.theme || 'monkey';
+      var t = s.theme || 'custom';
+      if ((Number(s.v) || 0) < 4 && t === 'monkey') { t = 'custom'; s.accent = '#ff7a5c'; }
       var root = document.documentElement;
       root.setAttribute('data-theme', t);
       if (s.fontSize) root.style.setProperty('--chunk-size', s.fontSize + 'px');
@@ -28,7 +29,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&family=Literata:opsz,wght@7..72,400;7..72,500&family=Inter:wght@400;500;600&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=9" />
+  <link rel="stylesheet" href="css/style.css?v=10" />
 </head>
 <body>
 
@@ -331,8 +332,10 @@
 
       <section class="sec">
         <div class="sec-head"><h2 class="sec-title"><svg class="sec-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M9 9v12M15 9v12"/></svg>activity</h2><span class="sec-sub">trailing 26 weeks · one square per day</span></div>
-        <div class="heatmap-months" id="heatmapMonths"></div>
-        <div class="heatmap" id="heatmap"></div>
+        <div class="heat-scroll">
+          <div class="heatmap-months" id="heatmapMonths"></div>
+          <div class="heatmap" id="heatmap"></div>
+        </div>
         <div class="heatmap-legend">less <span class="legend-cells"><span class="heat-cell l0"></span><span class="heat-cell l1"></span><span class="heat-cell l2"></span><span class="heat-cell l3"></span><span class="heat-cell l4"></span></span> more</div>
       </section>
 
@@ -439,18 +442,18 @@
       <div class="theme-grid" id="themeGrid"></div>
 
       <div class="accent-block">
-        <div class="set-label-row"><span class="set-name">accent</span><span class="accent-val" id="accentVal">#e2b714</span></div>
+        <div class="set-label-row"><span class="set-name">accent</span><span class="accent-val" id="accentVal">#ff7a5c</span></div>
         <div class="accent-row" id="accentPresets" role="group" aria-label="accent presets">
-          <button class="accent-swatch" type="button" data-accent="#e2b714" style="--sw:#e2b714" aria-label="amber accent" aria-pressed="true"></button>
+          <button class="accent-swatch" type="button" data-accent="#e2b714" style="--sw:#e2b714" aria-label="amber accent" aria-pressed="false"></button>
           <button class="accent-swatch" type="button" data-accent="#88c0d0" style="--sw:#88c0d0" aria-label="glacier accent" aria-pressed="false"></button>
           <button class="accent-swatch" type="button" data-accent="#cba6f7" style="--sw:#cba6f7" aria-label="lilac accent" aria-pressed="false"></button>
           <button class="accent-swatch" type="button" data-accent="#a6e22e" style="--sw:#a6e22e" aria-label="lime accent" aria-pressed="false"></button>
           <button class="accent-swatch" type="button" data-accent="#38bdf8" style="--sw:#38bdf8" aria-label="sky accent" aria-pressed="false"></button>
           <button class="accent-swatch" type="button" data-accent="#eb6f92" style="--sw:#eb6f92" aria-label="rose accent" aria-pressed="false"></button>
           <button class="accent-swatch" type="button" data-accent="#7ec8a3" style="--sw:#7ec8a3" aria-label="mint accent" aria-pressed="false"></button>
-          <button class="accent-swatch" type="button" data-accent="#ff7a5c" style="--sw:#ff7a5c" aria-label="coral accent" aria-pressed="false"></button>
+          <button class="accent-swatch" type="button" data-accent="#ff7a5c" style="--sw:#ff7a5c" aria-label="coral accent" aria-pressed="true"></button>
           <label class="accent-pick" title="pick any color">
-            <input type="color" id="setAccent" value="#e2b714" aria-label="custom accent color" />
+            <input type="color" id="setAccent" value="#ff7a5c" aria-label="custom accent color" />
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 1 1 9-9c0 2-1.5 3-3 3h-2a2 2 0 0 0-1 3.7c.4.7 0 2.3-3 2.3z"/><circle cx="8" cy="11" r=".9" fill="currentColor"/><circle cx="11" cy="7.5" r=".9" fill="currentColor"/><circle cx="15.5" cy="8.5" r=".9" fill="currentColor"/></svg>
           </label>
         </div>
@@ -605,8 +608,8 @@
   <div class="noscript">chunky needs JavaScript to run. enable it and reload.</div>
 </noscript>
 
-<script src="js/passages.js?v=9"></script>
-<script src="js/engine.js?v=9"></script>
-<script src="js/app.js?v=9"></script>
+<script src="js/passages.js?v=10"></script>
+<script src="js/engine.js?v=10"></script>
+<script src="js/app.js?v=10"></script>
 </body>
 </html>

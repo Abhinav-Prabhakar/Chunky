@@ -84,9 +84,9 @@ const saveJSON = (k, v) => {
 
 /* ---------- settings ---------- */
 const DEFAULT_SETTINGS = {
-  v: 3,
-  theme: 'monkey',
-  accent: '#e2b714',
+  v: 4,
+  theme: 'custom',
+  accent: '#ff7a5c',
   fontSize: 64,
   fontFamily: "'Roboto Mono', monospace",
   pivot: true,
@@ -107,14 +107,20 @@ const DEFAULT_SETTINGS = {
 function loadSettings() {
   const raw = loadJSON(LS.settings, {}) || {};
   const s = Object.assign({}, DEFAULT_SETTINGS, raw);
-  if (!THEME_IDS.includes(s.theme)) s.theme = 'monkey';
+  /* v4: the coral-on-charcoal theme became the default. Nobody actually chose
+     the old default, so a stored monkeytype theme migrates instead of sticking. */
+  if (Number(raw.v) < 4 && s.theme === 'monkey') {
+    s.theme = 'custom';
+    s.accent = '#ff7a5c';
+  }
+  if (!THEME_IDS.includes(s.theme)) s.theme = 'custom';
   if (!isHex(s.accent)) s.accent = DEFAULT_SETTINGS.accent;
   if (!PUNCT_MULT[s.punctStrength]) s.punctStrength = 'normal';
   s.fontSize = clamp(Number(s.fontSize) || 64, 36, 128);
   s.chunkSize = clamp(Number(s.chunkSize) || 2, 1, 4);
   s.wpm = clamp(Number(s.wpm) || 300, WPM_MIN, WPM_MAX);
   s.goal = clamp(Number(s.goal) || 0, 0, 5000);
-  s.v = 3;
+  s.v = 4;
   return s;
 }
 
